@@ -16,6 +16,8 @@ from datetime import datetime, timezone, timedelta
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 XLSX_URL = "https://docs.google.com/spreadsheets/d/12w6lJOdcIggtQpymebiHp5nbJijpdOQQ/export?format=xlsx"
 XLSX_PATH = os.path.join(BASE_DIR, "_faturamento_cache.xlsx")
+OSP_URL = "https://docs.google.com/spreadsheets/d/1qo36gG7jvtgO_Z0wgdIGq9ISE3-CKwLd/export?format=xlsx"
+OSP_PATH = os.path.join(BASE_DIR, "_osp_cache.xlsx")
 TEMPLATE_PATH = os.path.join(BASE_DIR, "template.html")
 OUTPUT_PATH = os.path.join(BASE_DIR, "index.html")
 
@@ -81,6 +83,53 @@ SIGLA_MAP = {
     'ENGEMON': {'nome': 'Engemon', 'obj_key': None, 'grupo': 'normal', 'icon': 'EG', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
     'RD': {'nome': 'RD (Raia/Drogasil)', 'obj_key': None, 'grupo': 'normal', 'icon': 'RD', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
     'SENAC': {'nome': 'Senac', 'obj_key': 'SENAC', 'grupo': 'normal', 'icon': 'SC', 'cor': '#B07000', 'bg': '#FFF8E6'},
+    'HAPVIDA': {'nome': 'Hapvida', 'obj_key': None, 'grupo': 'normal', 'icon': 'HV', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
+}
+
+# Planilha de OSP: cada aba = 1 cliente, coluna "OSP" = codigo unico da unidade
+# (mesmo valor que aparece em "OS MANENG" na planilha de faturamento).
+# name_col = indice (0-based) da coluna com o nome/endereco da unidade nessa aba.
+OSP_SHEET_CONFIG = {
+    'SAMS': {'sigla': 'SAMS', 'name_col': 2},
+    'CARREFOUR ': {'sigla': 'CRF', 'name_col': 1},
+    'ASSAI': {'sigla': 'ASSAI', 'name_col': 1},
+    'ATAKAREJO': {'sigla': 'ATAKAREJO', 'name_col': 1},
+    'ATENTO': {'sigla': 'ATENTO', 'name_col': 1},
+    'AUTOZONE': {'sigla': 'AUTOZONE', 'name_col': 1},
+    'BANCO MERCANTIL': {'sigla': 'BANCO MERCANTIL', 'name_col': 1},
+    'BOTICARIO': {'sigla': 'BOT', 'name_col': 4},
+    'BRADESCO - AGENCIAS': {'sigla': 'AG BRAD', 'name_col': 1},
+    'BRADESCO - RESERVA TECNICA': {'sigla': 'BRAD', 'name_col': 1},
+    'BRADESCO - IN HAUS': {'sigla': 'IN HAUS', 'name_col': 1},
+    'BRADESCO - FUNDAÇÃO': {'sigla': 'FUND BRAD', 'name_col': 1},
+    'CENCOSUD - GIGA': {'sigla': 'GIGA', 'name_col': 1},
+    'CENCOSUD - MERCANTIL': {'sigla': 'MERCANTIL', 'name_col': 1},
+    'DROGASIL': {'sigla': 'RD', 'name_col': 1},
+    'CENCOSUD - GBARBOSA': {'sigla': 'GBARBOSA', 'name_col': 1},
+    'DIA': {'sigla': 'DIA', 'name_col': 1},
+    'GPA': {'sigla': 'GPA', 'name_col': 1},
+    'HAPVIDA': {'sigla': 'HAPVIDA', 'name_col': 1},
+    'JLL': {'sigla': 'JLL', 'name_col': 1},
+    'LEROY MERLIN': {'sigla': 'LM', 'name_col': 1, 'servico_col': 3, 'residente_sigla': 'LM_RESIDENTES'},
+    'OBRAMAX': {'sigla': 'OBRAMAX', 'name_col': 1},
+    'SAPATARIA NOVA': {'sigla': 'SAPATARIA', 'name_col': 2},
+    'SENAC': {'sigla': 'SENAC', 'name_col': 1},
+    'SMARTFIT': {'sigla': 'SMTF', 'name_col': 1},
+    'TENDA ': {'sigla': 'TENDA', 'name_col': 1},
+    'ZAMP': {'sigla': 'ZAMP', 'name_col': 1},
+}
+
+# aba "DIVERSOS": mistura varios clientes pequenos na mesma aba -> mapeamento manual por OSP
+DIVERSOS_OSP_TO_SIGLA = {
+    '337': 'SIEMENS', '823': 'CRF', '1804': 'OUTROS', '1806': 'ACCENTURE',
+    '1827': 'BAUDUCCO', '1840': 'OUTROS',
+    '1820/1': 'SUMERBOL', '1820/2': 'SUMERBOL', '1820/3': 'SUMERBOL',
+    '1823/1': 'SINDILOJAS', '1823/2': 'SINDILOJAS', '1823/3': 'SINDILOJAS',
+    '1824/1': 'ROVERI', '1824/2': 'ROVERI',
+    '1828/1': 'TIM', '1828/2': 'TIM', '1828/3': 'TIM', '1828/4': 'TIM',
+    '1829/1': 'PORTO', '1829/2': 'PORTO', '1830/1': 'PORTO', '1830/2': 'PORTO',
+    '653 / 654': 'CRF',
+    '1842': 'COGNA',
 }
 
 # tradução dos rótulos do bloco "Modelo / Metas Valores" da aba Objetivo -> chaves usadas no dashboard
@@ -98,16 +147,84 @@ def log(msg):
     print(msg, file=sys.stderr)
 
 
-def download_xlsx():
-    log(f"Baixando planilha de {XLSX_URL} ...")
-    req = urllib.request.Request(XLSX_URL, headers={'User-Agent': 'Mozilla/5.0'})
+def download(url, path):
+    log(f"Baixando {url} ...")
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=60) as resp:
         data = resp.read()
     if not data.startswith(b'PK'):
-        raise RuntimeError("Download não retornou um .xlsx válido (sem login/permissão?)")
-    with open(XLSX_PATH, 'wb') as f:
+        raise RuntimeError(f"Download de {url} não retornou um .xlsx válido (sem login/permissão?)")
+    with open(path, 'wb') as f:
         f.write(data)
-    log(f"OK, {len(data)} bytes salvos em {XLSX_PATH}")
+    log(f"OK, {len(data)} bytes salvos em {path}")
+
+
+def normalize_osp(v):
+    if v is None:
+        return None
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    if isinstance(v, int):
+        return str(v)
+    s = str(v).strip()
+    s = re.sub(r'^OSP\s*', '', s, flags=re.IGNORECASE)  # ex.: "OSP 1832/03" -> "1832/03"
+    s = re.sub(r'[A-Za-z]+$', '', s).strip()  # ex.: "1832/08A" -> "1832/08" (variacao de 2a via de nota)
+    if '/' in s:
+        partes = [p.lstrip('0') or '0' if p.isdigit() else p for p in s.split('/')]
+        s = '/'.join(partes)  # ex.: "1794/064" -> "1794/64" (zero a esquerda inconsistente entre cadastro e nota)
+    elif s.isdigit():
+        s = str(int(s))
+    return s
+
+
+def parse_osp_registry(warnings):
+    import openpyxl
+    wb = openpyxl.load_workbook(OSP_PATH, data_only=True, read_only=True)
+    registro = {}  # sigla -> [[osp, nome], ...]
+
+    def add(sigla, osp, nome):
+        if not osp:
+            return
+        registro.setdefault(sigla, []).append([osp, (nome or '').strip()])
+
+    for sheet_name, cfg in OSP_SHEET_CONFIG.items():
+        if sheet_name not in wb.sheetnames:
+            warnings.append(f"OSP: aba '{sheet_name}' não encontrada na planilha")
+            continue
+        ws = wb[sheet_name]
+        rows = list(ws.iter_rows(min_row=1, values_only=True))
+        header_idx = next((i for i, r in enumerate(rows[:5]) if r and r[0] and str(r[0]).strip().upper() == 'OSP'), None)
+        if header_idx is None:
+            warnings.append(f"OSP: cabeçalho 'OSP' não encontrado na aba '{sheet_name}'")
+            continue
+        for r in rows[header_idx + 1:]:
+            if not r or r[0] in (None, ''):
+                continue
+            if str(r[0]).strip().upper() == 'OSP':
+                continue  # cabecalho repetido no meio da aba
+            osp = normalize_osp(r[0])
+            nome = r[cfg['name_col']] if len(r) > cfg['name_col'] else None
+            sigla = cfg['sigla']
+            if 'servico_col' in cfg and len(r) > cfg['servico_col']:
+                servico = str(r[cfg['servico_col']] or '').strip().upper()
+                if 'RESIDENTE' in servico:
+                    sigla = cfg['residente_sigla']
+            add(sigla, osp, nome)
+
+    ws = wb['DIVERSOS']
+    rows = list(ws.iter_rows(min_row=1, values_only=True))
+    header_idx = next((i for i, r in enumerate(rows[:5]) if r and r[0] and str(r[0]).strip().upper() == 'OSP'), None)
+    for r in rows[header_idx + 1:]:
+        if not r or r[0] in (None, ''):
+            continue
+        osp = normalize_osp(r[0])
+        sigla = DIVERSOS_OSP_TO_SIGLA.get(osp)
+        if sigla is None:
+            warnings.append(f"OSP (DIVERSOS): código '{osp}' ({r[1]!r}) sem mapeamento de SIGLA — ignorado")
+            continue
+        add(sigla, osp, r[1])
+
+    return registro
 
 
 def parse_valor(v):
@@ -136,16 +253,18 @@ def build():
     log(f"Abas de mês encontradas: {meses_disponiveis}")
 
     agregado = {}
+    faturado_osp = {}  # mes -> sigla -> [osp, ...] (unidades com preventiva/P-ENG faturada)
     warnings = []
     siglas_nao_mapeadas = set()
 
     for mes in meses_disponiveis:
         ws = wb[mes]
         agregado[mes] = {}
+        faturado_osp[mes] = {}
         for row in ws.iter_rows(min_row=2, values_only=True):
-            if row is None or len(row) < 8:
+            if row is None or len(row) < 9:
                 continue
-            valor, sigla, serv = row[2], row[6], row[7]
+            valor, sigla, serv, os_maneng = row[2], row[6], row[7], row[8]
             obs = row[5] if len(row) > 5 else None
             if serv is None or sigla is None:
                 continue
@@ -165,6 +284,10 @@ def build():
             d[cat] = round(d[cat] + val, 2)
             if sigla not in SIGLA_MAP:
                 siglas_nao_mapeadas.add(sigla)
+            if serv in ('P', 'P-ENG'):
+                osp_norm = normalize_osp(os_maneng)
+                if osp_norm:
+                    faturado_osp[mes].setdefault(sigla, set()).add(osp_norm)
 
     # aba Objetivo: metas por cliente + metas por grupo
     ws = wb['Objetivo']
@@ -219,6 +342,14 @@ def build():
         if total_mes > 0:
             mes_atual = m
 
+    # Planilha de OSP: registro de unidades por cliente, para achar pendencias de faturamento
+    registro_osp = parse_osp_registry(warnings)
+    siglas_osp_nao_mapeadas = sorted(set(registro_osp.keys()) - set(SIGLA_MAP.keys()))
+    if siglas_osp_nao_mapeadas:
+        warnings.append(f"OSP: SIGLAs com unidades cadastradas mas SEM entrada em SIGLA_MAP: {siglas_osp_nao_mapeadas}")
+
+    faturado_osp_json = {m: {s: sorted(v) for s, v in d.items()} for m, d in faturado_osp.items()}
+
     tz = timezone(timedelta(hours=-3))
     agora = datetime.now(tz).strftime('%d/%m/%Y %H:%M')
 
@@ -238,6 +369,8 @@ def build():
     inject('/*OBJ_CLIENTE_JSON*/', json.dumps(obj_cliente, ensure_ascii=False))
     inject('/*OBJ_GRUPO_JSON*/', json.dumps(obj_grupo, ensure_ascii=False))
     inject('/*SIGLA_MAP_JSON*/', json.dumps(SIGLA_MAP, ensure_ascii=False))
+    inject('/*REGISTRO_OSP_JSON*/', json.dumps(registro_osp, ensure_ascii=False))
+    inject('/*FATURADO_OSP_JSON*/', json.dumps(faturado_osp_json, ensure_ascii=False))
     html = html.replace('/*GENERATED_AT*/', f'gerado em {agora} (America/Sao_Paulo)')
     html = html.replace('/*ATUALIZADO_EM*/', agora)
 
@@ -267,5 +400,6 @@ def build():
 
 
 if __name__ == '__main__':
-    download_xlsx()
+    download(XLSX_URL, XLSX_PATH)
+    download(OSP_URL, OSP_PATH)
     build()

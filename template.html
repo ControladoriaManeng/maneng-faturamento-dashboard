@@ -134,6 +134,16 @@ tbody tr:hover td{background:#F8F9FC}
 .sv-l{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
 .sv-v{font-size:14px;font-weight:900}
 
+.osp-box{margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
+.osp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.osp-title{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.osp-count{font-size:11px;font-weight:800;font-family:'Courier New',monospace}
+.osp-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+.osp-item{display:flex;align-items:center;gap:8px;background:var(--red-bg);border-radius:8px;padding:7px 10px;font-size:11.5px}
+.osp-item .code{font-family:'Courier New',monospace;font-size:10px;color:var(--red);font-weight:700;flex-shrink:0}
+.osp-item .nome{color:var(--text);flex:1}
+.osp-ok{font-size:11.5px;color:var(--green);font-weight:700;background:var(--green-bg);border-radius:8px;padding:8px 10px;text-align:center}
+
 /* CLIENTE VIEW */
 .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
 .cpill{background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .14s;text-align:left}
@@ -270,6 +280,19 @@ const OBJ_CLIENTE = /*OBJ_CLIENTE_JSON*/;
 const OBJ_GRUPO = /*OBJ_GRUPO_JSON*/;
 
 const SIGLA_MAP = /*SIGLA_MAP_JSON*/;
+
+// REGISTRO_OSP: sigla -> [[osp, nome], ...] — cadastro de unidades (Planilha de OSP)
+const REGISTRO_OSP = /*REGISTRO_OSP_JSON*/;
+// FATURADO_OSP: mes -> sigla -> [osp, ...] — unidades com preventiva faturada naquele mes
+const FATURADO_OSP = /*FATURADO_OSP_JSON*/;
+
+function unidadesPendentes(sigla, mes){
+  const registro = REGISTRO_OSP[sigla];
+  if(!registro || !registro.length) return null;
+  const faturadas = new Set((FATURADO_OSP[mes]||{})[sigla]||[]);
+  const pendentes = registro.filter(([osp])=>!faturadas.has(osp));
+  return {total: registro.length, faturadas: registro.length-pendentes.length, pendentes};
+}
 
 // ── Estado ──
 let MES=MES_ATUAL, FILTRO='TODOS';
@@ -468,7 +491,19 @@ function openModal(sigla){
       <div class="sv"><div class="sv-l">Preventiva</div><div class="sv-v" style="color:var(--navy)">${c.P>0?fmtFull(c.P):'—'}</div></div>
       <div class="sv"><div class="sv-l">Corretiva</div><div class="sv-v" style="color:var(--orange)">${c.C>0?fmtFull(c.C):'—'}</div></div>
       <div class="sv"><div class="sv-l">Engenharia</div><div class="sv-v" style="color:var(--zero)">${c.E>0?fmtFull(c.E):'—'}</div></div>
-    </div>`;
+    </div>
+    ${(()=>{
+      const u=unidadesPendentes(sigla,MES);
+      if(!u) return '';
+      if(!u.pendentes.length) return `<div class="osp-box"><div class="osp-ok">✓ todas as ${u.total} unidades com preventiva faturada em ${MES.replace('-26','/2026')}</div></div>`;
+      return `<div class="osp-box">
+        <div class="osp-hdr">
+          <span class="osp-title">Unidades sem faturamento (preventiva)</span>
+          <span class="osp-count" style="color:var(--red)">${u.pendentes.length} de ${u.total}</span>
+        </div>
+        <div class="osp-list">${u.pendentes.map(([osp,nome])=>`<div class="osp-item"><span class="code">${osp}</span><span class="nome">${nome}</span></div>`).join('')}</div>
+      </div>`;
+    })()}`;
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){document.getElementById('modal').style.display='none';}
