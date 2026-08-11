@@ -49,7 +49,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .section-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;padding-left:2px}
 
 /* GRUPO CARDS (top) */
-.grupo-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+.grupo-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:28px}
 
 .gcard{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 20px 18px;cursor:pointer;transition:all .16s;position:relative;overflow:hidden}
 .gcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(27,58,107,.1)}
@@ -205,6 +205,7 @@ tbody tr:hover td{background:#F8F9FC}
           <button class="fb" onclick="filtrar('E',this)">Engenharia</button>
           <button class="fb" onclick="filtrar('ZAMP',this)">ZAMP</button>
           <button class="fb" onclick="filtrar('AG BRAD',this)">Ag. Bradesco</button>
+          <button class="fb" onclick="filtrar('BOT',this)">O Boticário</button>
         </div>
       </div>
       <div id="zbanner-area"></div>
@@ -340,7 +341,7 @@ function renderGrupos(){
   const dados=AGREGADO[MES]||{};
   const cl=getClientes(MES);
 
-  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD'];
+  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD','BOT'];
   const clGlobal=cl.filter(c=>!EXCLUIR_DE_GLOBAL.includes(c.sigla));
 
   const totP=clGlobal.reduce((a,c)=>a+c.P,0);
@@ -355,9 +356,16 @@ function renderGrupos(){
   const agFat=db.P+db.C;
   const agObj=OBJ_GRUPO['BRADESCO AGENCIAS'];
 
+  const dbot=dados['BOT']||{P:0,C:0,E:0};
+  const botFat=dbot.P+dbot.C;
+  const botObj=OBJ_CLIENTE['O BOTICARIO']||0;
+  // O Boticario tratado como total independente (como ZAMP/AG BRAD) — sua meta sai
+  // da meta de Preventiva Total pra nao contar duas vezes.
+  const preventivaObj=(OBJ_GRUPO['PREVENTIVA TOTAL']||0)-botObj;
+
   const GRUPOS=[
     {key:'P',      label:'Preventiva',        icon:'P', cor:'#1B3A6B', bg:'#EEF2FA',
-     fat:totP, obj:OBJ_GRUPO['PREVENTIVA TOTAL'],
+     fat:totP, obj:preventivaObj,
      sub:`${fmt(totP)} faturado`},
     {key:'C',      label:'Corretiva',          icon:'C', cor:'#E84B1A', bg:'#FEF3EE',
      fat:totC, obj:OBJ_GRUPO['CORRETIVA'],
@@ -371,6 +379,9 @@ function renderGrupos(){
     {key:'AG BRAD',label:'Agências Bradesco',  icon:'B', cor:'#0A7B8A', bg:'#E6F6F8',
      fat:agFat, obj:agObj,
      sub:`${fmt(agFat)} faturado`},
+    {key:'BOT',    label:'O Boticário',        icon:'O', cor:'#5B35B0', bg:'#F0ECFC',
+     fat:botFat, obj:botObj,
+     sub:`P: ${fmt(dbot.P)} · C: ${fmt(dbot.C)}`},
   ];
 
   document.getElementById('grupo-row').innerHTML=GRUPOS.map(g=>{
@@ -389,7 +400,7 @@ function renderGrupos(){
       <div class="gcard-meta">${g.sub}</div>
       <div class="gcard-bar"><div class="gcard-bar-fill" style="width:${pW}%;background:${g.cor}"></div></div>
       <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;font-family:'Courier New',monospace">
-        <span style="color:var(--muted)">meta ${fmt(g.obj)}</span>
+        <span style="color:var(--muted);font-weight:700">meta ${fmt(g.obj)}</span>
         <span style="color:${diff>=0?'var(--green)':'var(--red)'};font-weight:700">${diff>=0?'+':''}${fmt(diff)}</span>
       </div>
     </div>`;
@@ -431,10 +442,10 @@ function renderResumo(cl){
 function renderTabela(cl){
   let lista=[...cl];
   if(FILTRO!=='TODOS'){
-    if(['ZAMP','AG BRAD'].includes(FILTRO)){
+    if(['ZAMP','AG BRAD','BOT'].includes(FILTRO)){
       lista=lista.filter(c=>c.sigla===FILTRO);
     } else {
-      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD'].includes(c.sigla));
+      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD','BOT'].includes(c.sigla));
     }
   }
   const zeros=lista.filter(c=>c.obj>0&&c.fat===0);

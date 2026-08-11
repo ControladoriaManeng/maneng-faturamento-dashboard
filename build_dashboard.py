@@ -57,7 +57,7 @@ SIGLA_MAP = {
     'AUTOZONE': {'nome': 'AutoZone', 'obj_key': None, 'grupo': 'normal', 'icon': 'AZ', 'cor': '#C0200E', 'bg': '#FEF0EE'},
     'OBRAMAX': {'nome': 'Obramax', 'obj_key': 'OBRAMAX', 'grupo': 'normal', 'icon': 'OB', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
     'TIM': {'nome': 'TIM', 'obj_key': None, 'grupo': 'normal', 'icon': 'T', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
-    'GPA': {'nome': 'GPA', 'obj_key': None, 'grupo': 'normal', 'icon': 'GP', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
+    'GPA': {'nome': 'GPA', 'obj_key': 'GPA', 'grupo': 'normal', 'icon': 'GP', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
     'JLL': {'nome': 'JLL', 'obj_key': 'JLL', 'grupo': 'normal', 'icon': 'J', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'TENDA': {'nome': 'Tenda', 'obj_key': 'TENDA', 'grupo': 'normal', 'icon': 'TE', 'cor': '#B07000', 'bg': '#FFF8E6'},
     'MERCANTIL': {'nome': 'Mercantil (Mercado)', 'obj_key': 'MERCANTIL', 'grupo': 'normal', 'icon': 'ME', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
@@ -81,7 +81,7 @@ SIGLA_MAP = {
     'BRETAS': {'nome': 'Bretas', 'obj_key': None, 'grupo': 'normal', 'icon': 'BR', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'COGNA': {'nome': 'Cogna', 'obj_key': None, 'grupo': 'normal', 'icon': 'CG', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
     'ENGEMON': {'nome': 'Engemon', 'obj_key': None, 'grupo': 'normal', 'icon': 'EG', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
-    'RD': {'nome': 'RD (Raia/Drogasil)', 'obj_key': None, 'grupo': 'normal', 'icon': 'RD', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
+    'RD': {'nome': 'RD (Raia/Drogasil)', 'obj_key': 'RD', 'grupo': 'normal', 'icon': 'RD', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
     'SENAC': {'nome': 'Senac', 'obj_key': 'SENAC', 'grupo': 'normal', 'icon': 'SC', 'cor': '#B07000', 'bg': '#FFF8E6'},
     'HAPVIDA': {'nome': 'Hapvida', 'obj_key': None, 'grupo': 'normal', 'icon': 'HV', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
 }
