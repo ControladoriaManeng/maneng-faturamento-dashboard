@@ -1,0 +1,39 @@
+name: Atualizar painel de faturamento
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install openpyxl
+
+      - name: Gerar dashboard atualizado
+        run: python build_dashboard.py
+
+      - name: Publicar se houver mudanca
+        run: |
+          git config user.name "maneng-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "Sem mudancas nesta rodada."
+          else
+            git commit -m "Atualiza dashboard de faturamento ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+            git push
+          fi

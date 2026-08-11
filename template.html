@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maneng — Acompanhamento Faturamento</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B3A6B;--orange:#E84B1A;--bg:#F0F2F7;--white:#fff;
+  --border:#E2E6EF;--muted:#8A96B0;--text:#1B3A6B;
+  --green:#0E8A5A;--green-bg:#EAF7F1;--green-lt:#D0F0E3;
+  --yellow:#B07000;--yellow-bg:#FFF8E6;
+  --red:#C0200E;--red-bg:#FEF0EE;
+  --zero:#7B2700;--zero-bg:#FEF3EE;
+  --purple:#5B35B0;--purple-bg:#F0ECFC;
+  --teal:#0A7B8A;--teal-bg:#E6F6F8;
+  --radius:14px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;font-size:14px}
+
+/* HEADER */
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(27,58,107,.06)}
+.logo{display:flex;align-items:center;gap:11px}
+.logo svg{width:32px;height:32px}
+.logo-name{font-size:18px;font-weight:800;color:var(--navy);line-height:1}
+.logo-name span{color:var(--orange)}
+.logo-sub{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;letter-spacing:.08em;margin-top:1px}
+.nav{display:flex;gap:4px}
+.nb{padding:7px 16px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .14s}
+.nb:hover{border-color:var(--navy);color:var(--navy)}
+.nb.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.mes-sel{padding:8px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--navy);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;outline:none;transition:border-color .14s}
+.mes-sel:hover{border-color:var(--navy)}
+.dot-live{display:flex;align-items:center;gap:6px;font-size:11px;font-family:'Courier New',monospace;color:var(--green);font-weight:700}
+.dot-live::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+.upd-sub{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;margin-top:1px;text-align:right}
+
+/* MAIN */
+.main{padding:28px 32px;max-width:1440px;margin:0 auto}
+
+/* PAGE TITLE */
+.page-title{text-align:center;margin-bottom:28px}
+.page-title h1{font-size:22px;font-weight:800;color:var(--navy)}
+.page-title p{font-size:12px;color:var(--muted);margin-top:4px;font-family:'Courier New',monospace}
+
+/* SECTION LABEL */
+.section-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;padding-left:2px}
+
+/* GRUPO CARDS (top) */
+.grupo-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+
+.gcard{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 20px 18px;cursor:pointer;transition:all .16s;position:relative;overflow:hidden}
+.gcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(27,58,107,.1)}
+.gcard.selected{border-color:currentColor;box-shadow:0 0 0 3px rgba(27,58,107,.08)}
+
+.gcard-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;margin-bottom:10px;flex-shrink:0}
+
+.gcard-label{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.gcard-value{font-size:26px;font-weight:900;line-height:1;margin-bottom:8px}
+.gcard-meta{font-size:11px;color:var(--muted);line-height:1.5}
+.gcard-pct{font-size:10.5px;font-weight:700;margin-top:10px;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:4px}
+
+.gcard-bar{height:4px;background:var(--border);border-radius:2px;margin-top:12px;overflow:hidden}
+.gcard-bar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* RESUMO GERAL */
+.resumo-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.rcard{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.rcard-label{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.rcard-value{font-size:24px;font-weight:900;line-height:1}
+.rcard-sub{font-size:11px;color:var(--muted);margin-top:5px;font-family:'Courier New',monospace}
+
+/* TABELA */
+.panel{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ph{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pt{font-size:13px;font-weight:800;color:var(--navy)}
+.filter-btns{display:flex;gap:5px;flex-wrap:wrap}
+.fb{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .13s}
+.fb:hover{border-color:var(--navy);color:var(--navy)}
+.fb.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tw{max-height:460px;overflow-y:auto}
+.tw::-webkit-scrollbar{width:4px}
+.tw::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{padding:10px 14px;font-size:9.5px;font-family:'Courier New',monospace;letter-spacing:.07em;color:var(--muted);border-bottom:2px solid var(--border);font-weight:600;text-transform:uppercase;background:#F8F9FC;position:sticky;top:0;z-index:2;text-align:left}
+thead th.r{text-align:right}
+tbody td{padding:11px 14px;border-bottom:1px solid rgba(226,230,239,.5);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .1s;cursor:pointer}
+tbody tr:hover td{background:#F8F9FC}
+.rz td{background:var(--zero-bg)!important}
+.cn{font-weight:800;font-size:13px}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:9.5px;font-weight:700;white-space:nowrap}
+.c-ok{background:var(--green-lt);color:var(--green)}
+.c-warn{background:var(--yellow-bg);color:var(--yellow)}
+.c-bad{background:var(--red-bg);color:var(--red)}
+.c-zero{background:var(--zero-bg);color:var(--zero);border:1px solid rgba(123,39,0,.15)}
+.prog{display:flex;align-items:center;gap:7px}
+.prog-track{flex:1;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.prog-fill{height:100%;border-radius:3px}
+.prog-pct{font-size:11px;font-family:'Courier New',monospace;font-weight:700;width:48px;text-align:right;flex-shrink:0}
+.mono{font-family:'Courier New',monospace}
+.zbanner{background:var(--zero-bg);border:1px solid rgba(123,39,0,.15);border-radius:8px;padding:10px 14px;margin:12px 20px 0;font-size:11px;color:var(--zero);font-weight:700;display:flex;align-items:flex-start;gap:8px;line-height:1.55}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(27,58,107,.35);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-box{background:var(--white);border-radius:18px;width:520px;max-width:96vw;box-shadow:0 28px 72px rgba(0,0,0,.18);overflow:hidden}
+.modal-hdr{padding:22px 26px 0}
+.modal-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:10px}
+.modal-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;flex-shrink:0}
+.modal-title{font-size:17px;font-weight:900;color:var(--navy)}
+.modal-sub{font-size:11px;color:var(--muted);font-family:'Courier New',monospace;margin-top:2px}
+.modal-close{position:absolute;top:18px;right:20px;background:var(--bg);border:none;color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--border);color:var(--navy)}
+.modal-body{padding:20px 26px 24px;position:relative}
+
+.modal-big{display:flex;align-items:baseline;gap:8px;margin:14px 0 4px}
+.modal-big-val{font-size:36px;font-weight:900;line-height:1}
+.modal-big-of{font-size:15px;color:var(--muted);font-family:'Courier New',monospace}
+.modal-big-pct{font-size:14px;font-weight:800;font-family:'Courier New',monospace}
+
+.modal-bar{height:12px;background:var(--bg);border-radius:6px;overflow:hidden;margin:14px 0 6px}
+.modal-bar-fill{height:100%;border-radius:6px;transition:width 1s ease}
+.modal-bar-ends{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'Courier New',monospace}
+
+.modal-result{border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin:14px 0}
+.modal-result-lbl{font-size:11px;font-family:'Courier New',monospace;color:var(--muted);font-weight:700;text-transform:uppercase}
+.modal-result-val{font-size:22px;font-weight:900;font-family:'Courier New',monospace}
+
+.serv-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sv{background:var(--bg);border-radius:10px;padding:12px;text-align:center}
+.sv-l{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sv-v{font-size:14px;font-weight:900}
+
+/* CLIENTE VIEW */
+.client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.cpill{background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .14s;text-align:left}
+.cpill:hover{border-color:var(--navy);box-shadow:0 2px 8px rgba(27,58,107,.08)}
+.cpill.zp{border-color:rgba(123,39,0,.25);background:var(--zero-bg)}
+.cpill-name{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.cpill.zp .cpill-name{color:var(--zero)}
+.cpill-val{font-size:15px;font-weight:900;color:var(--navy)}
+.cpill.zp .cpill-val{color:var(--zero)}
+.cpill-pct{font-size:10px;font-family:'Courier New',monospace;color:var(--muted);margin-top:2px}
+
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fu .35s ease forwards;opacity:0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none"><polygon points="16,2 30,30 2,30" fill="none" stroke="#1B3A6B" stroke-width="2.8" stroke-linejoin="round"/><polygon points="16,11 25,28 7,28" fill="#1B3A6B"/></svg>
+    <div><div class="logo-name">man<span>eng</span></div><div class="logo-sub">BI · CONTROLE DE FATURAMENTO 2026</div></div>
+  </div>
+  <div class="nav">
+    <button class="nb on" onclick="go('visao')">Visão Geral</button>
+    <button class="nb" onclick="go('clientes')">Por Cliente</button>
+  </div>
+  <div class="hdr-r">
+    <select class="mes-sel" id="mes-sel" onchange="trocarMes(this.value)"></select>
+    <div>
+      <span class="dot-live">Dados reais</span>
+      <div class="upd-sub" id="upd-sub">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div id="v-visao">
+
+    <div class="page-title anim">
+      <h1>Acompanhamento Faturamento</h1>
+      <p id="page-sub">—</p>
+    </div>
+
+    <div class="section-lbl">Faturamento por Grupo</div>
+    <div class="grupo-row" id="grupo-row"></div>
+
+    <div class="section-lbl">Visão Geral do Mês</div>
+    <div class="resumo-row" id="resumo-row"></div>
+
+    <div class="section-lbl">Detalhe por Cliente</div>
+    <div class="panel anim" style="animation-delay:.15s">
+      <div class="ph">
+        <span class="pt" id="table-title">Todos os Clientes</span>
+        <div class="filter-btns" id="filter-btns">
+          <button class="fb on" onclick="filtrar('TODOS',this)">Todos</button>
+          <button class="fb" onclick="filtrar('P',this)">Preventiva</button>
+          <button class="fb" onclick="filtrar('C',this)">Corretiva</button>
+          <button class="fb" onclick="filtrar('E',this)">Engenharia</button>
+          <button class="fb" onclick="filtrar('ZAMP',this)">ZAMP</button>
+          <button class="fb" onclick="filtrar('AG BRAD',this)">Ag. Bradesco</button>
+        </div>
+      </div>
+      <div id="zbanner-area"></div>
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>Cliente</th>
+            <th class="r">Preventiva</th>
+            <th class="r">Corretiva</th>
+            <th class="r">Engenharia</th>
+            <th class="r">Total Faturado</th>
+            <th class="r">Objetivo</th>
+            <th style="min-width:140px">Atingimento</th>
+            <th class="r">Falta / Excede</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="v-clientes" style="display:none">
+    <div class="page-title anim">
+      <h1>Análise por Cliente</h1>
+      <p id="client-sub">Clique em um cliente para ver o detalhe completo</p>
+    </div>
+    <div class="client-grid" id="client-grid"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" style="position:relative">
+    <div class="modal-hdr">
+      <div class="modal-badge">
+        <div class="modal-icon" id="m-icon">•</div>
+        <div><div class="modal-title" id="m-title">—</div><div class="modal-sub" id="m-sub">—</div></div>
+      </div>
+    </div>
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DADOS — gerados automaticamente a partir da planilha oficial
+// Fonte: CONTROLE DE FATURAMENTO UNIFICADO 2026.xlsx (Google Drive)
+// /*GENERATED_AT*/
+// ============================================================
+const ALIAS = /*ALIAS_JSON*/;
+function normSigla(s){ return ALIAS[s] || s; }
+
+const MESES_DISPONIVEIS = /*MESES_JSON*/;
+const MES_ATUAL = /*MES_ATUAL_JSON*/;
+
+const AGREGADO_RAW = /*AGREGADO_JSON*/;
+
+const AGREGADO = {};
+for(const [mes, siglas] of Object.entries(AGREGADO_RAW)){
+  AGREGADO[mes] = {};
+  for(const [sigla, vals] of Object.entries(siglas)){
+    const ns = normSigla(sigla);
+    if(!AGREGADO[mes][ns]) AGREGADO[mes][ns] = {P:0,C:0,E:0};
+    AGREGADO[mes][ns].P += vals.P||0;
+    AGREGADO[mes][ns].C += vals.C||0;
+    AGREGADO[mes][ns].E += vals.E||0;
+  }
+}
+
+const OBJ_CLIENTE = /*OBJ_CLIENTE_JSON*/;
+
+const OBJ_GRUPO = /*OBJ_GRUPO_JSON*/;
+
+const SIGLA_MAP = /*SIGLA_MAP_JSON*/;
+
+// ── Estado ──
+let MES=MES_ATUAL, FILTRO='TODOS';
+
+// ── Utils ──
+const fmt=v=>{
+  if(!v&&v!==0)return'—';
+  const a=Math.abs(v);
+  const s=a>=1e6?(a/1e6).toFixed(1).replace('.',',')+' M':a>=1000?(a/1000).toFixed(1).replace('.',',')+' K':a.toLocaleString('pt-BR',{minimumFractionDigits:0});
+  return(v<0?'- ':'')+'R$ '+s;
+};
+const fmtFull=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct=v=>(v*100).toFixed(1).replace('.',',')+' %';
+const corPct=p=>p>=1?'var(--green)':p>=0.75?'var(--yellow)':p>0?'var(--red)':'var(--muted)';
+const bgPct=p=>p>=1?'var(--green-bg)':p>=0.75?'var(--yellow-bg)':p>0?'var(--red-bg)':'var(--bg)';
+const stOf=(fat,obj)=>{
+  if(!obj)return null;
+  if(fat===0)return{l:'⚠ SEM FAT.',c:'c-zero',cor:'var(--zero)',p:0};
+  const p=fat/obj;
+  if(p>=1)return{l:'✓ ATINGIDO',c:'c-ok',cor:'var(--green)',p};
+  if(p>=0.75)return{l:'● EM RISCO',c:'c-warn',cor:'var(--yellow)',p};
+  return{l:'✕ ATRASADO',c:'c-bad',cor:'var(--red)',p};
+};
+
+function getClientes(mes){
+  const dados=AGREGADO[mes]||{};
+  const siglas=new Set([...Object.keys(dados),...Object.keys(SIGLA_MAP)]);
+  const lista=[];
+  for(const sigla of siglas){
+    const map=SIGLA_MAP[sigla];if(!map)continue;
+    const d=dados[sigla]||{P:0,C:0,E:0};
+    const obj=map.obj_key?(OBJ_CLIENTE[map.obj_key]||0):0;
+    const fat=['ZAMP','BOT','AG BRAD'].includes(sigla)?d.P+d.C:d.P+d.C+d.E;
+    lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:stOf(fat,obj)});
+  }
+  return lista.sort((a,b)=>{
+    const pa=a.obj>0?a.fat/a.obj:a.fat>0?2:-1;
+    const pb=b.obj>0?b.fat/b.obj:b.fat>0?2:-1;
+    return pa-pb;
+  });
+}
+
+// ── Render Grupos ──
+function renderGrupos(){
+  const dados=AGREGADO[MES]||{};
+  const cl=getClientes(MES);
+
+  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD'];
+  const clGlobal=cl.filter(c=>!EXCLUIR_DE_GLOBAL.includes(c.sigla));
+
+  const totP=clGlobal.reduce((a,c)=>a+c.P,0);
+  const totC=clGlobal.reduce((a,c)=>a+c.C,0);
+  const totE=clGlobal.reduce((a,c)=>a+c.E,0);
+
+  const dz=dados['ZAMP']||{P:0,C:0,E:0};
+  const zampFat=dz.P+dz.C;
+  const zampObj=OBJ_GRUPO['ZAMP_P']+OBJ_GRUPO['ZAMP_C'];
+
+  const db=dados['AG BRAD']||{P:0,C:0,E:0};
+  const agFat=db.P+db.C;
+  const agObj=OBJ_GRUPO['BRADESCO AGENCIAS'];
+
+  const GRUPOS=[
+    {key:'P',      label:'Preventiva',        icon:'P', cor:'#1B3A6B', bg:'#EEF2FA',
+     fat:totP, obj:OBJ_GRUPO['PREVENTIVA TOTAL'],
+     sub:`${fmt(totP)} faturado`},
+    {key:'C',      label:'Corretiva',          icon:'C', cor:'#E84B1A', bg:'#FEF3EE',
+     fat:totC, obj:OBJ_GRUPO['CORRETIVA'],
+     sub:`${fmt(totC)} faturado`},
+    {key:'E',      label:'Engenharia',         icon:'E', cor:'#7B2700', bg:'#FEF8F5',
+     fat:totE, obj:OBJ_GRUPO['ENGENHARIA'],
+     sub:`${fmt(totE)} faturado`},
+    {key:'ZAMP',   label:'ZAMP',               icon:'Z', cor:'#C0200E', bg:'#FEF0EE',
+     fat:zampFat, obj:zampObj,
+     sub:`P: ${fmt(dz.P)} · C: ${fmt(dz.C)}`},
+    {key:'AG BRAD',label:'Agências Bradesco',  icon:'B', cor:'#0A7B8A', bg:'#E6F6F8',
+     fat:agFat, obj:agObj,
+     sub:`${fmt(agFat)} faturado`},
+  ];
+
+  document.getElementById('grupo-row').innerHTML=GRUPOS.map(g=>{
+    const pct=g.obj>0?g.fat/g.obj:0;
+    const cor=corPct(pct);
+    const diff=g.fat-g.obj;
+    const sel=FILTRO===g.key?' selected':'';
+    const pW=Math.min(pct*100,100);
+    return `<div class="gcard anim${sel}" style="border-top:3px solid ${g.cor}" onclick="filtrarGrupo('${g.key.replace(/'/g,"\\'")}',this)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div class="gcard-icon" style="background:${g.cor}">${g.icon}</div>
+        <span class="gcard-pct" style="background:${bgPct(pct)};color:${cor}">${g.obj>0?fmtPct(pct):'—'}</span>
+      </div>
+      <div class="gcard-label" style="color:${g.cor}">${g.label}</div>
+      <div class="gcard-value" style="color:${g.cor}">${fmt(g.fat)}</div>
+      <div class="gcard-meta">${g.sub}</div>
+      <div class="gcard-bar"><div class="gcard-bar-fill" style="width:${pW}%;background:${g.cor}"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;font-family:'Courier New',monospace">
+        <span style="color:var(--muted)">meta ${fmt(g.obj)}</span>
+        <span style="color:${diff>=0?'var(--green)':'var(--red)'};font-weight:700">${diff>=0?'+':''}${fmt(diff)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderResumo(cl){
+  const fat=cl.reduce((a,c)=>a+c.fat,0);
+  const objGlobal=OBJ_GRUPO['PREVENTIVA TOTAL']+OBJ_GRUPO['CORRETIVA']+OBJ_GRUPO['ENGENHARIA']
+                 +OBJ_GRUPO['ZAMP_P']+OBJ_GRUPO['ZAMP_C']+OBJ_GRUPO['BRADESCO AGENCIAS'];
+  const obj=objGlobal;
+  const pct=obj>0?fat/obj:0;
+  const ok=cl.filter(c=>c.obj>0&&c.fat>=c.obj).length;
+  const zero=cl.filter(c=>c.obj>0&&c.fat===0).length;
+  const diff=fat-obj;
+  document.getElementById('resumo-row').innerHTML=`
+    <div class="rcard anim" style="animation-delay:.05s">
+      <div class="rcard-label">Total Faturado</div>
+      <div class="rcard-value" style="color:var(--navy)">${fmt(fat)}</div>
+      <div class="rcard-sub">${cl.filter(c=>c.fat>0).length} clientes com faturamento</div>
+    </div>
+    <div class="rcard anim" style="animation-delay:.09s">
+      <div class="rcard-label">Atingimento Global</div>
+      <div class="rcard-value" style="color:${corPct(pct)}">${fmtPct(pct)}</div>
+      <div class="rcard-sub">objetivo: ${fmt(obj)}</div>
+    </div>
+    <div class="rcard anim" style="animation-delay:.13s">
+      <div class="rcard-label">${diff>=0?'Excedente':'Falta para Meta'}</div>
+      <div class="rcard-value" style="color:${diff>=0?'var(--green)':'var(--red)'}">${fmt(Math.abs(diff))}</div>
+      <div class="rcard-sub">${ok} clientes atingiram a meta</div>
+    </div>
+    <div class="rcard anim" style="animation-delay:.17s">
+      <div class="rcard-label">Sem Faturamento</div>
+      <div class="rcard-value" style="color:${zero>0?'var(--zero)':'var(--muted)'}">${zero}</div>
+      <div class="rcard-sub">${zero>0?'clientes com meta em aberto':'nenhum cliente zerado'}</div>
+    </div>`;
+}
+
+function renderTabela(cl){
+  let lista=[...cl];
+  if(FILTRO!=='TODOS'){
+    if(['ZAMP','AG BRAD'].includes(FILTRO)){
+      lista=lista.filter(c=>c.sigla===FILTRO);
+    } else {
+      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD'].includes(c.sigla));
+    }
+  }
+  const zeros=lista.filter(c=>c.obj>0&&c.fat===0);
+  document.getElementById('zbanner-area').innerHTML=zeros.length
+    ?`<div class="zbanner"><span style="font-size:14px;flex-shrink:0">⚠</span><span>${zeros.length} cliente${zeros.length>1?'s':''} <b>sem faturamento</b>: ${zeros.map(c=>'<b>'+c.nome+'</b>').join(' · ')}</span></div>`:'';
+  document.getElementById('tbody').innerHTML=lista.map(c=>{
+    const z=c.fat===0&&c.obj>0;
+    const diff=c.fat-c.obj;
+    const pW=c.s?Math.min(c.s.p*100,100):0;
+    return `<tr class="${z?'rz':''}" onclick="openModal('${c.sigla}')">
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div style="width:28px;height:28px;border-radius:7px;background:${c.bg};color:${c.cor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0">${c.icon}</div>
+        <span class="cn" style="color:${z?'var(--zero)':'var(--navy)'}">${c.nome}</span>
+      </div></td>
+      <td class="r mono">${c.P>0?fmt(c.P):'—'}</td>
+      <td class="r mono">${c.C>0?fmt(c.C):'—'}</td>
+      <td class="r mono">${c.E>0?fmt(c.E):'—'}</td>
+      <td class="r mono" style="font-weight:800;color:${z?'var(--zero)':'var(--navy)'}">${z?'R$ 0':fmt(c.fat)}</td>
+      <td class="r mono" style="color:var(--muted)">${c.obj>0?fmt(c.obj):'—'}</td>
+      <td>${c.obj>0?`<div class="prog">
+        <div class="prog-track"><div class="prog-fill" style="width:${pW}%;background:${c.s?c.s.cor:'#ccc'}"></div></div>
+        <span class="prog-pct" style="color:${c.s?c.s.cor:'var(--muted)'}">${c.s?fmtPct(c.s.p):'—'}</span>
+      </div>`:'<span style="color:var(--muted);font-size:10px">sem meta</span>'}</td>
+      <td class="r mono"><span style="color:${c.obj>0?(diff>=0?'var(--green)':'var(--red)'):'var(--muted)'};font-weight:700">${c.obj>0?fmt(diff):'—'}</span></td>
+      <td>${c.s?`<span class="chip ${c.s.c}">${c.s.l}</span>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(sigla){
+  const c=getClientes(MES).find(x=>x.sigla===sigla);if(!c)return;
+  const z=c.fat===0&&c.obj>0;
+  const diff=c.fat-c.obj;
+  const pct=c.obj>0?c.fat/c.obj:0;
+  const cor=c.s?c.s.cor:'var(--muted)';
+  document.getElementById('m-icon').textContent=c.icon;
+  document.getElementById('m-icon').style.background=c.cor;
+  document.getElementById('m-title').textContent=c.nome;
+  document.getElementById('m-sub').textContent=MES.replace('-26','/2026')+(c.s?' · '+c.s.l:'');
+  document.getElementById('m-body').innerHTML=`
+    ${z?`<div class="zbanner" style="margin-bottom:16px"><span style="font-size:14px">⚠</span><span><b>${c.nome}</b> não possui faturamento em ${MES.replace('-26','/2026')}. Meta em aberto: <b>${fmtFull(c.obj)}</b></span></div>`:''}
+    <div class="modal-big">
+      <span class="modal-big-val" style="color:${z?'var(--zero)':'var(--navy)'}">${z?'R$ 0':fmtFull(c.fat)}</span>
+      ${c.obj>0?`<span class="modal-big-of">de ${fmtFull(c.obj)}</span><span class="modal-big-pct" style="color:${cor}">${fmtPct(pct)}</span>`:''}
+    </div>
+    ${c.obj>0?`
+    <div class="modal-bar"><div class="modal-bar-fill" style="width:${Math.min(pct*100,100)}%;background:${cor}"></div></div>
+    <div class="modal-bar-ends"><span>R$ 0</span><span>Meta: ${fmtFull(c.obj)}</span></div>
+    <div class="modal-result" style="background:${diff>=0?'var(--green-bg)':z?'var(--zero-bg)':'var(--red-bg)'}">
+      <div class="modal-result-lbl">${z?'Total em aberto':diff>=0?'Excedente na meta':'Falta para atingir'}</div>
+      <div class="modal-result-val" style="color:${diff>=0?'var(--green)':z?'var(--zero)':'var(--red)'}">${z?fmtFull(c.obj):fmtFull(Math.abs(diff))}</div>
+    </div>`:''}
+    <div class="serv-row">
+      <div class="sv"><div class="sv-l">Preventiva</div><div class="sv-v" style="color:var(--navy)">${c.P>0?fmtFull(c.P):'—'}</div></div>
+      <div class="sv"><div class="sv-l">Corretiva</div><div class="sv-v" style="color:var(--orange)">${c.C>0?fmtFull(c.C):'—'}</div></div>
+      <div class="sv"><div class="sv-l">Engenharia</div><div class="sv-v" style="color:var(--zero)">${c.E>0?fmtFull(c.E):'—'}</div></div>
+    </div>`;
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+
+function filtrar(g,btn){
+  FILTRO=g;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.gcard').forEach(c=>c.classList.remove('selected'));
+  renderTabela(getClientes(MES));
+  document.getElementById('table-title').textContent=g==='TODOS'?'Todos os Clientes':'Filtro: '+btn.textContent;
+}
+function filtrarGrupo(g,el){
+  FILTRO=FILTRO===g?'TODOS':g;
+  document.querySelectorAll('.gcard').forEach(c=>c.classList.remove('selected'));
+  if(FILTRO!=='TODOS')el.classList.add('selected');
+  document.querySelectorAll('.fb').forEach((b,i)=>b.classList.toggle('on',i===0&&FILTRO==='TODOS'));
+  renderTabela(getClientes(MES));
+  document.getElementById('table-title').textContent=FILTRO==='TODOS'?'Todos os Clientes':'Filtro: '+el.querySelector('.gcard-label').textContent;
+}
+
+function trocarMes(m){
+  MES=m;FILTRO='TODOS';
+  document.querySelectorAll('.fb').forEach((b,i)=>b.classList.toggle('on',i===0));
+  document.querySelectorAll('.gcard').forEach(c=>c.classList.remove('selected'));
+  renderAll();
+}
+
+function go(v){
+  ['visao','clientes'].forEach(id=>document.getElementById('v-'+id).style.display=id===v?'':'none');
+  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('on',['visao','clientes'][i]===v));
+  if(v==='clientes')renderClienteView();
+}
+function renderClienteView(){
+  const cl=getClientes(MES);
+  document.getElementById('client-sub').textContent=MES.replace('-26','/2026')+' · clique para ver o detalhe completo';
+  document.getElementById('client-grid').innerHTML=cl.filter(c=>c.fat>0||c.obj>0).map(c=>{
+    const z=c.fat===0&&c.obj>0;
+    const pct=c.obj>0?c.fat/c.obj:0;
+    return `<div class="cpill${z?' zp':''}" onclick="openModal('${c.sigla}')" style="border-top:3px solid ${c.cor}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="width:26px;height:26px;border-radius:7px;background:${c.bg};color:${c.cor};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">${c.icon}</div>
+        <div class="cpill-name">${c.nome}</div>
+      </div>
+      <div class="cpill-val">${z?'R$ 0':fmt(c.fat)}</div>
+      <div class="cpill-pct">${c.obj>0?fmtPct(pct)+' da meta':'sem meta'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  const cl=getClientes(MES);
+  const mes=MES.replace('-26','/2026');
+  const nfs=Object.values(AGREGADO[MES]||{}).reduce((a,d)=>{
+    const tot=(d.P||0)+(d.C||0)+(d.E||0);
+    return tot>0?a+1:a;
+  },0);
+  document.getElementById('page-sub').textContent=`${nfs} clientes com faturamento em ${mes} · dados reais da planilha`;
+  renderGrupos();
+  renderResumo(cl);
+  renderTabela(cl);
+}
+
+const selEl=document.getElementById('mes-sel');
+const NOME_MES={'JAN-26':'Janeiro 2026','FEV-26':'Fevereiro 2026','MAR-26':'Março 2026','ABR-26':'Abril 2026','MAI-26':'Maio 2026','JUN-26':'Junho 2026','JUL-26':'Julho 2026','AGO-26':'Agosto 2026','SET-26':'Setembro 2026','OUT-26':'Outubro 2026','NOV-26':'Novembro 2026','DEZ-26':'Dezembro 2026'};
+selEl.innerHTML=MESES_DISPONIVEIS.map(m=>`<option value="${m}"${m===MES_ATUAL?' selected':''}>${NOME_MES[m]||m}</option>`).join('');
+document.getElementById('upd-sub').textContent='atualizado: /*ATUALIZADO_EM*/';
+renderAll();
+</script>
+</body>
+</html>
