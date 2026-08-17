@@ -143,6 +143,9 @@ tbody tr:hover td{background:#F8F9FC}
 .osp-item .code{font-family:'Courier New',monospace;font-size:10px;color:var(--red);font-weight:700;flex-shrink:0}
 .osp-item .nome{color:var(--text);flex:1}
 .osp-ok{font-size:11.5px;color:var(--green);font-weight:700;background:var(--green-bg);border-radius:8px;padding:8px 10px;text-align:center}
+.eng-item{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);border-radius:8px;padding:7px 10px;font-size:11.5px}
+.eng-item .nome{color:var(--text)}
+.eng-item .valor{font-family:'Courier New',monospace;font-weight:700;color:var(--zero);flex-shrink:0}
 
 /* CLIENTE VIEW */
 .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
@@ -202,7 +205,7 @@ tbody tr:hover td{background:#F8F9FC}
           <button class="fb on" onclick="filtrar('TODOS',this)">Todos</button>
           <button class="fb" onclick="filtrar('P',this)">Preventiva</button>
           <button class="fb" onclick="filtrar('C',this)">Corretiva</button>
-          <button class="fb" onclick="filtrar('E',this)">Engenharia</button>
+          <button class="fb" onclick="filtrar('ENGENHARIA',this)">Engenharia</button>
           <button class="fb" onclick="filtrar('ZAMP',this)">ZAMP</button>
           <button class="fb" onclick="filtrar('AG BRAD',this)">Ag. Bradesco</button>
           <button class="fb" onclick="filtrar('BOT',this)">O Boticário</button>
@@ -322,13 +325,22 @@ function getClientes(mes){
   const dados=AGREGADO[mes]||{};
   const siglas=new Set([...Object.keys(dados),...Object.keys(SIGLA_MAP)]);
   const lista=[];
+  // Engenharia sai do total de cada cliente e vira um item unico, independente de quem faturou —
+  // o detalhe de quais clientes contribuiram fica no modal (breakdown).
+  let totE=0;
+  const engBreakdown=[];
   for(const sigla of siglas){
     const map=SIGLA_MAP[sigla];if(!map)continue;
     const d=dados[sigla]||{P:0,C:0,E:0};
     const obj=map.obj_key?(OBJ_CLIENTE[map.obj_key]||0):0;
-    const fat=['ZAMP','BOT','AG BRAD'].includes(sigla)?d.P+d.C:d.P+d.C+d.E;
+    const fat=d.P+d.C;
+    if(d.E>0){ totE+=d.E; engBreakdown.push({nome:map.nome,valor:d.E}); }
     lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:stOf(fat,obj)});
   }
+  engBreakdown.sort((a,b)=>b.valor-a.valor);
+  const engObj=OBJ_GRUPO['ENGENHARIA']||0;
+  lista.push({sigla:'ENGENHARIA',nome:'Engenharia',grupo:'ENGENHARIA',icon:'E',cor:'#7B2700',bg:'#FEF8F5',
+    P:0,C:0,E:totE,fat:totE,obj:engObj,s:stOf(totE,engObj),breakdown:engBreakdown});
   return lista.sort((a,b)=>{
     const pa=a.obj>0?a.fat/a.obj:a.fat>0?2:-1;
     const pb=b.obj>0?b.fat/b.obj:b.fat>0?2:-1;
@@ -341,7 +353,7 @@ function renderGrupos(){
   const dados=AGREGADO[MES]||{};
   const cl=getClientes(MES);
 
-  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD','BOT'];
+  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD','BOT','ENGENHARIA'];
   const clGlobal=cl.filter(c=>!EXCLUIR_DE_GLOBAL.includes(c.sigla));
 
   const totP=clGlobal.reduce((a,c)=>a+c.P,0);
@@ -370,7 +382,7 @@ function renderGrupos(){
     {key:'C',      label:'Corretiva',          icon:'C', cor:'#E84B1A', bg:'#FEF3EE',
      fat:totC, obj:OBJ_GRUPO['CORRETIVA'],
      sub:`${fmt(totC)} faturado`},
-    {key:'E',      label:'Engenharia',         icon:'E', cor:'#7B2700', bg:'#FEF8F5',
+    {key:'ENGENHARIA', label:'Engenharia',      icon:'E', cor:'#7B2700', bg:'#FEF8F5',
      fat:totE, obj:OBJ_GRUPO['ENGENHARIA'],
      sub:`${fmt(totE)} faturado`},
     {key:'ZAMP',   label:'ZAMP',               icon:'Z', cor:'#C0200E', bg:'#FEF0EE',
@@ -442,10 +454,10 @@ function renderResumo(cl){
 function renderTabela(cl){
   let lista=[...cl];
   if(FILTRO!=='TODOS'){
-    if(['ZAMP','AG BRAD','BOT'].includes(FILTRO)){
+    if(['ZAMP','AG BRAD','BOT','ENGENHARIA'].includes(FILTRO)){
       lista=lista.filter(c=>c.sigla===FILTRO);
     } else {
-      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD','BOT'].includes(c.sigla));
+      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD','BOT','ENGENHARIA'].includes(c.sigla));
     }
   }
   const zeros=lista.filter(c=>c.obj>0&&c.fat===0);
@@ -460,9 +472,9 @@ function renderTabela(cl){
         <div style="width:28px;height:28px;border-radius:7px;background:${c.bg};color:${c.cor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0">${c.icon}</div>
         <span class="cn" style="color:${z?'var(--zero)':'var(--navy)'}">${c.nome}</span>
       </div></td>
-      <td class="r mono">${c.P>0?fmt(c.P):'—'}</td>
-      <td class="r mono">${c.C>0?fmt(c.C):'—'}</td>
-      <td class="r mono">${c.E>0?fmt(c.E):'—'}</td>
+      <td class="r mono">${c.sigla!=='ENGENHARIA'&&c.P>0?fmt(c.P):'—'}</td>
+      <td class="r mono">${c.sigla!=='ENGENHARIA'&&c.C>0?fmt(c.C):'—'}</td>
+      <td class="r mono">${c.sigla==='ENGENHARIA'?fmt(c.E):'—'}</td>
       <td class="r mono" style="font-weight:800;color:${z?'var(--zero)':'var(--navy)'}">${z?'R$ 0':fmt(c.fat)}</td>
       <td class="r mono" style="color:var(--muted)">${c.obj>0?fmt(c.obj):'—'}</td>
       <td>${c.obj>0?`<div class="prog">
@@ -514,7 +526,14 @@ function openModal(sigla){
         </div>
         <div class="osp-list">${u.pendentes.map(([osp,nome])=>`<div class="osp-item"><span class="code">${osp}</span><span class="nome">${nome}</span></div>`).join('')}</div>
       </div>`;
-    })()}`;
+    })()}
+    ${c.sigla==='ENGENHARIA'?`<div class="osp-box">
+      <div class="osp-hdr">
+        <span class="osp-title">Clientes faturados em Engenharia</span>
+        <span class="osp-count" style="color:var(--zero)">${c.breakdown.length}</span>
+      </div>
+      <div class="osp-list">${c.breakdown.length?c.breakdown.map(b=>`<div class="eng-item"><span class="nome">${b.nome}</span><span class="valor">${fmt(b.valor)}</span></div>`).join(''):'<span style="color:var(--muted);font-size:11px">nenhum cliente com Engenharia faturada em '+MES.replace('-26','/2026')+'</span>'}</div>
+    </div>`:''}`;
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){document.getElementById('modal').style.display='none';}

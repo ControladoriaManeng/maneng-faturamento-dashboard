@@ -28,14 +28,14 @@ MESES_ORDEM = ['JAN-26', 'FEV-26', 'MAR-26', 'ABR-26', 'MAI-26', 'JUN-26',
 ALIAS = {
     "SAM'S": "SAMS", "GBRABOSA": "GBARBOSA", "BM": "BANCO MERCANTIL", "BCO MERC": "BANCO MERCANTIL",
     "BCO MERCANTIL": "BANCO MERCANTIL", "CARREFOUR": "CRF", "BOTICARIO": "BOT",
-    "BRADESCO": "BRAD", "IMOPAR": "OUTROS", "OUTLET": "OUTROS", "NUC BRAD": "IN HAUS",
+    "BRADESCO": "BRAD", "NUC BRAD": "IN HAUS",
     "BRADESCO IN HAUS": "IN HAUS",
-    "SHOPPING PAMPLONA": "CRF", "SHOP PAMPLONA": "CRF", "VIVARA": "OUTROS", "LG": "OUTROS",
-    "GM": "OUTROS", "OKEAN": "OUTROS", "MERCANTIL MERCADO": "MERCANTIL",
+    "SHOPPING PAMPLONA": "CRF", "SHOP PAMPLONA": "CRF", "MERCANTIL MERCADO": "MERCANTIL",
     "ATAKARE": "ATAKAREJO", "BAUDUCCO2": "BAUDUCCO",
     # descobertos lendo a planilha real em 2026-08-11:
     "BRAD AG": "AG BRAD", "BRADESCO AGENCIAS": "AG BRAD",
     "FUND BRADESCO": "FUND BRAD", "FUND. BRAD": "FUND BRAD",
+    "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD",
     "BK": "ZAMP",
 }
 
@@ -77,7 +77,13 @@ SIGLA_MAP = {
     'COBASI': {'nome': 'Cobasi', 'obj_key': None, 'grupo': 'normal', 'icon': 'CO', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'BIG': {'nome': 'BIG', 'obj_key': None, 'grupo': 'normal', 'icon': 'BI', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
     'SMS': {'nome': 'SMS', 'obj_key': None, 'grupo': 'normal', 'icon': 'SM', 'cor': '#B07000', 'bg': '#FFF8E6'},
-    'OUTROS': {'nome': 'Outros clientes', 'obj_key': None, 'grupo': 'normal', 'icon': 'OU', 'cor': '#8A96B0', 'bg': '#F0F2F7'},
+    'IMOPAR': {'nome': 'Imopar (Shopping Paseo)', 'obj_key': None, 'grupo': 'normal', 'icon': 'IM', 'cor': '#8A96B0', 'bg': '#F0F2F7'},
+    'OUTLET': {'nome': 'Outlet Premium Itaquaquecetuba', 'obj_key': None, 'grupo': 'normal', 'icon': 'OU', 'cor': '#8A96B0', 'bg': '#F0F2F7'},
+    'VIVARA': {'nome': 'Vivara', 'obj_key': None, 'grupo': 'normal', 'icon': 'VI', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
+    'LG': {'nome': 'LG', 'obj_key': None, 'grupo': 'normal', 'icon': 'LG', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
+    'GM': {'nome': 'GM', 'obj_key': None, 'grupo': 'normal', 'icon': 'GM', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
+    'OKEAN': {'nome': 'Okean', 'obj_key': None, 'grupo': 'normal', 'icon': 'OK', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
+    'RD SAUDE': {'nome': 'RD Saúde', 'obj_key': None, 'grupo': 'normal', 'icon': 'RS', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     # clientes novos, encontrados na leitura da planilha real em 2026-08-11:
     'BRETAS': {'nome': 'Bretas', 'obj_key': None, 'grupo': 'normal', 'icon': 'BR', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'COGNA': {'nome': 'Cogna', 'obj_key': None, 'grupo': 'normal', 'icon': 'CG', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
@@ -122,8 +128,8 @@ OSP_SHEET_CONFIG = {
 
 # aba "DIVERSOS": mistura varios clientes pequenos na mesma aba -> mapeamento manual por OSP
 DIVERSOS_OSP_TO_SIGLA = {
-    '337': 'SIEMENS', '823': 'CRF', '1804': 'OUTROS', '1806': 'ACCENTURE',
-    '1827': 'BAUDUCCO', '1840': 'OUTROS',
+    '337': 'SIEMENS', '823': 'CRF', '1804': 'IMOPAR', '1806': 'ACCENTURE',
+    '1827': 'BAUDUCCO', '1840': 'OUTLET',
     '1820/1': 'SUMERBOL', '1820/2': 'SUMERBOL', '1820/3': 'SUMERBOL',
     '1823/1': 'SINDILOJAS', '1823/2': 'SINDILOJAS', '1823/3': 'SINDILOJAS',
     '1824/1': 'ROVERI', '1824/2': 'ROVERI',
@@ -327,12 +333,23 @@ def build():
         if k not in obj_grupo:
             warnings.append(f"Meta de grupo '{k}' não encontrada na aba Objetivo")
 
+    # cliente novo na planilha, sem entrada manual em SIGLA_MAP -> cadastra automaticamente
+    # usando o proprio nome (nunca cai num balaio generico de "Outros").
+    PALETA_AUTO = [
+        ('#1B3A6B', '#EEF2FA'), ('#0E8A5A', '#EAF7F1'), ('#E84B1A', '#FEF3EE'),
+        ('#5B35B0', '#F0ECFC'), ('#0A7B8A', '#E6F6F8'), ('#B07000', '#FFF8E6'),
+        ('#C0200E', '#FEF0EE'),
+    ]
+    for i, sigla in enumerate(sorted(siglas_nao_mapeadas)):
+        cor, bg = PALETA_AUTO[i % len(PALETA_AUTO)]
+        nome = sigla if len(sigla) <= 3 else sigla.title()
+        SIGLA_MAP[sigla] = {'nome': nome, 'obj_key': None, 'grupo': 'normal', 'icon': sigla[:2].upper(), 'cor': cor, 'bg': bg}
+        log(f"Cliente novo detectado e cadastrado automaticamente: SIGLA='{sigla}' -> nome '{nome}' (ainda sem meta)")
+
     # checagem: toda meta de cliente deveria estar referenciada por algum SIGLA_MAP.obj_key
     obj_keys_usadas = {v['obj_key'] for v in SIGLA_MAP.values() if v['obj_key']}
     metas_orfas = sorted(set(obj_cliente.keys()) - obj_keys_usadas)
 
-    if siglas_nao_mapeadas:
-        warnings.append(f"SIGLAs com faturamento real mas SEM entrada em SIGLA_MAP (não aparecem no painel!): {sorted(siglas_nao_mapeadas)}")
     if metas_orfas:
         warnings.append(f"Metas na aba Objetivo sem nenhum cliente do painel apontando para elas: {metas_orfas}")
 
