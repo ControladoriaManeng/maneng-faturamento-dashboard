@@ -204,7 +204,7 @@ tbody tr:hover td{background:#F8F9FC}
         <div class="filter-btns" id="filter-btns">
           <button class="fb on" onclick="filtrar('TODOS',this)">Todos</button>
           <button class="fb" onclick="filtrar('P',this)">Preventiva</button>
-          <button class="fb" onclick="filtrar('C',this)">Corretiva</button>
+          <button class="fb" onclick="filtrar('CORRETIVA',this)">Corretiva</button>
           <button class="fb" onclick="filtrar('ENGENHARIA',this)">Engenharia</button>
           <button class="fb" onclick="filtrar('ZAMP',this)">ZAMP</button>
           <button class="fb" onclick="filtrar('AG BRAD',this)">Ag. Bradesco</button>
@@ -325,22 +325,29 @@ function getClientes(mes){
   const dados=AGREGADO[mes]||{};
   const siglas=new Set([...Object.keys(dados),...Object.keys(SIGLA_MAP)]);
   const lista=[];
-  // Engenharia sai do total de cada cliente e vira um item unico, independente de quem faturou —
-  // o detalhe de quais clientes contribuiram fica no modal (breakdown).
-  let totE=0;
-  const engBreakdown=[];
+  // Engenharia e Corretiva saem do total dos clientes "normais" e viram itens unicos,
+  // independente de quem faturou — o detalhe de quais clientes contribuiram fica no modal
+  // (breakdown). ZAMP/AG BRAD/BOT sao grupos independentes e mantem a propria Corretiva.
+  let totE=0, totC=0;
+  const engBreakdown=[], corBreakdown=[];
   for(const sigla of siglas){
     const map=SIGLA_MAP[sigla];if(!map)continue;
     const d=dados[sigla]||{P:0,C:0,E:0};
     const obj=map.obj_key?(OBJ_CLIENTE[map.obj_key]||0):0;
-    const fat=d.P+d.C;
+    const especial=map.grupo!=='normal';
+    const fat=especial?d.P+d.C:d.P;
     if(d.E>0){ totE+=d.E; engBreakdown.push({nome:map.nome,valor:d.E}); }
+    if(!especial&&d.C>0){ totC+=d.C; corBreakdown.push({nome:map.nome,valor:d.C}); }
     lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:stOf(fat,obj)});
   }
   engBreakdown.sort((a,b)=>b.valor-a.valor);
+  corBreakdown.sort((a,b)=>b.valor-a.valor);
   const engObj=OBJ_GRUPO['ENGENHARIA']||0;
+  const corObj=OBJ_GRUPO['CORRETIVA']||0;
   lista.push({sigla:'ENGENHARIA',nome:'Engenharia',grupo:'ENGENHARIA',icon:'E',cor:'#7B2700',bg:'#FEF8F5',
     P:0,C:0,E:totE,fat:totE,obj:engObj,s:stOf(totE,engObj),breakdown:engBreakdown});
+  lista.push({sigla:'CORRETIVA',nome:'Corretiva',grupo:'CORRETIVA',icon:'C',cor:'#E84B1A',bg:'#FEF3EE',
+    P:0,C:totC,E:0,fat:totC,obj:corObj,s:stOf(totC,corObj),breakdown:corBreakdown});
   return lista.sort((a,b)=>{
     const pa=a.obj>0?a.fat/a.obj:a.fat>0?2:-1;
     const pb=b.obj>0?b.fat/b.obj:b.fat>0?2:-1;
@@ -353,7 +360,7 @@ function renderGrupos(){
   const dados=AGREGADO[MES]||{};
   const cl=getClientes(MES);
 
-  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD','BOT','ENGENHARIA'];
+  const EXCLUIR_DE_GLOBAL=['ZAMP','AG BRAD','BOT','ENGENHARIA','CORRETIVA'];
   const clGlobal=cl.filter(c=>!EXCLUIR_DE_GLOBAL.includes(c.sigla));
 
   const totP=clGlobal.reduce((a,c)=>a+c.P,0);
@@ -379,7 +386,7 @@ function renderGrupos(){
     {key:'P',      label:'Preventiva',        icon:'P', cor:'#1B3A6B', bg:'#EEF2FA',
      fat:totP, obj:preventivaObj,
      sub:`${fmt(totP)} faturado`},
-    {key:'C',      label:'Corretiva',          icon:'C', cor:'#E84B1A', bg:'#FEF3EE',
+    {key:'CORRETIVA', label:'Corretiva',       icon:'C', cor:'#E84B1A', bg:'#FEF3EE',
      fat:totC, obj:OBJ_GRUPO['CORRETIVA'],
      sub:`${fmt(totC)} faturado`},
     {key:'ENGENHARIA', label:'Engenharia',      icon:'E', cor:'#7B2700', bg:'#FEF8F5',
@@ -454,10 +461,10 @@ function renderResumo(cl){
 function renderTabela(cl){
   let lista=[...cl];
   if(FILTRO!=='TODOS'){
-    if(['ZAMP','AG BRAD','BOT','ENGENHARIA'].includes(FILTRO)){
+    if(['ZAMP','AG BRAD','BOT','ENGENHARIA','CORRETIVA'].includes(FILTRO)){
       lista=lista.filter(c=>c.sigla===FILTRO);
     } else {
-      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD','BOT','ENGENHARIA'].includes(c.sigla));
+      lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD','BOT','ENGENHARIA','CORRETIVA'].includes(c.sigla));
     }
   }
   const zeros=lista.filter(c=>c.obj>0&&c.fat===0);
@@ -472,8 +479,8 @@ function renderTabela(cl){
         <div style="width:28px;height:28px;border-radius:7px;background:${c.bg};color:${c.cor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0">${c.icon}</div>
         <span class="cn" style="color:${z?'var(--zero)':'var(--navy)'}">${c.nome}</span>
       </div></td>
-      <td class="r mono">${c.sigla!=='ENGENHARIA'&&c.P>0?fmt(c.P):'—'}</td>
-      <td class="r mono">${c.sigla!=='ENGENHARIA'&&c.C>0?fmt(c.C):'—'}</td>
+      <td class="r mono">${c.P>0?fmt(c.P):'—'}</td>
+      <td class="r mono">${c.grupo!=='normal'&&c.C>0?fmt(c.C):'—'}</td>
       <td class="r mono">${c.sigla==='ENGENHARIA'?fmt(c.E):'—'}</td>
       <td class="r mono" style="font-weight:800;color:${z?'var(--zero)':'var(--navy)'}">${z?'R$ 0':fmt(c.fat)}</td>
       <td class="r mono" style="color:var(--muted)">${c.obj>0?fmt(c.obj):'—'}</td>
@@ -512,8 +519,8 @@ function openModal(sigla){
     </div>`:''}
     <div class="serv-row">
       <div class="sv"><div class="sv-l">Preventiva</div><div class="sv-v" style="color:var(--navy)">${c.P>0?fmtFull(c.P):'—'}</div></div>
-      <div class="sv"><div class="sv-l">Corretiva</div><div class="sv-v" style="color:var(--orange)">${c.C>0?fmtFull(c.C):'—'}</div></div>
-      <div class="sv"><div class="sv-l">Engenharia</div><div class="sv-v" style="color:var(--zero)">${c.E>0?fmtFull(c.E):'—'}</div></div>
+      <div class="sv"><div class="sv-l">Corretiva</div><div class="sv-v" style="color:var(--orange)">${(c.grupo!=='normal'&&c.C>0)?fmtFull(c.C):'—'}</div></div>
+      <div class="sv"><div class="sv-l">Engenharia</div><div class="sv-v" style="color:var(--zero)">${c.sigla==='ENGENHARIA'?fmtFull(c.E):'—'}</div></div>
     </div>
     ${(()=>{
       const u=unidadesPendentes(sigla,MES);
@@ -533,6 +540,13 @@ function openModal(sigla){
         <span class="osp-count" style="color:var(--zero)">${c.breakdown.length}</span>
       </div>
       <div class="osp-list">${c.breakdown.length?c.breakdown.map(b=>`<div class="eng-item"><span class="nome">${b.nome}</span><span class="valor">${fmt(b.valor)}</span></div>`).join(''):'<span style="color:var(--muted);font-size:11px">nenhum cliente com Engenharia faturada em '+MES.replace('-26','/2026')+'</span>'}</div>
+    </div>`:''}
+    ${c.sigla==='CORRETIVA'?`<div class="osp-box">
+      <div class="osp-hdr">
+        <span class="osp-title">Clientes faturados em Corretiva</span>
+        <span class="osp-count" style="color:var(--orange)">${c.breakdown.length}</span>
+      </div>
+      <div class="osp-list">${c.breakdown.length?c.breakdown.map(b=>`<div class="eng-item"><span class="nome">${b.nome}</span><span class="valor" style="color:var(--orange)">${fmt(b.valor)}</span></div>`).join(''):'<span style="color:var(--muted);font-size:11px">nenhum cliente com Corretiva faturada em '+MES.replace('-26','/2026')+'</span>'}</div>
     </div>`:''}`;
   document.getElementById('modal').style.display='flex';
 }
