@@ -38,7 +38,19 @@ ALIAS = {
     "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD",
     "BK": "ZAMP",
     "LEROY": "LM",
+    "LEROY MERLIN RESIDENTE": "LM_RESIDENTES",
     "SMART FIT": "SMTF",
+    # projetos avulsos de Engenharia Bradesco lançados com sigla descritiva em vez de código:
+    "BRADESCO - CACOAL": "BRAD", "BRADESCO - PRÉDIO PRATA": "BRAD",
+    "BRADESCO - PRÉDIO PRATA SALA LAN": "BRAD",
+    "BRADESCO RESERVA TÉCNICA": "BRAD", "BRADESCO RESERVA TÉCNICA - PREVENTIVA": "BRAD",
+    "BRADESCO FUNDAÇÃO - PROPRIÁ": "FUND BRAD",
+}
+
+# clientes que a Maneng decidiu parar de acompanhar no painel (contrato encerrado etc.) —
+# ficam fora mesmo que tenham faturamento historico em meses anteriores.
+SIGLAS_IGNORADAS = {
+    'ATENTO',
 }
 
 # SIGLA -> {nome, obj_key (chave em OBJ_CLIENTE, ou None se sem meta), grupo, icon, cor, bg}
@@ -66,7 +78,6 @@ SIGLA_MAP = {
     'MERCANTIL': {'nome': 'Mercantil (Mercado)', 'obj_key': 'MERCANTIL', 'grupo': 'normal', 'icon': 'ME', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'BANCO MERCANTIL': {'nome': 'Banco Mercantil', 'obj_key': 'BANCO MERCANTIL', 'grupo': 'normal', 'icon': 'BM', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
     'ACCENTURE': {'nome': 'Accenture', 'obj_key': 'ACCENTURE', 'grupo': 'normal', 'icon': 'AC', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
-    'ATENTO': {'nome': 'Atento', 'obj_key': 'ATENTO', 'grupo': 'normal', 'icon': 'AT', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
     'DIA': {'nome': 'DIA', 'obj_key': None, 'grupo': 'normal', 'icon': 'D', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
     'BAUDUCCO': {'nome': 'Bauducco', 'obj_key': None, 'grupo': 'normal', 'icon': 'BA', 'cor': '#B07000', 'bg': '#FFF8E6'},
     'SIEMENS': {'nome': 'Siemens', 'obj_key': 'SIEMENS', 'grupo': 'normal', 'icon': 'SI', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
@@ -103,7 +114,6 @@ OSP_SHEET_CONFIG = {
     'CARREFOUR ': {'sigla': 'CRF', 'name_col': 1},
     'ASSAI': {'sigla': 'ASSAI', 'name_col': 1},
     'ATAKAREJO': {'sigla': 'ATAKAREJO', 'name_col': 1},
-    'ATENTO': {'sigla': 'ATENTO', 'name_col': 1},
     'AUTOZONE': {'sigla': 'AUTOZONE', 'name_col': 1},
     'BANCO MERCANTIL': {'sigla': 'BANCO MERCANTIL', 'name_col': 1},
     'BOTICARIO': {'sigla': 'BOT', 'name_col': 4},
@@ -288,6 +298,8 @@ def build():
                 continue
             sigla = str(sigla).strip()
             sigla = ALIAS.get(sigla, sigla)
+            if sigla in SIGLAS_IGNORADAS:
+                continue
             if sigla == 'LM' and normalize_osp(os_maneng) in lm_residente_codes:
                 sigla = 'LM_RESIDENTES'
             cat = 'E' if serv == 'P-ENG' else serv

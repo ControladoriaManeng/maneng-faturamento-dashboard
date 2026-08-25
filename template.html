@@ -364,8 +364,11 @@ function renderGrupos(){
   const clGlobal=cl.filter(c=>!EXCLUIR_DE_GLOBAL.includes(c.sigla));
 
   const totP=clGlobal.reduce((a,c)=>a+c.P,0);
-  const totC=clGlobal.reduce((a,c)=>a+c.C,0);
-  const totE=clGlobal.reduce((a,c)=>a+c.E,0);
+  // Corretiva e Engenharia usam a MESMA soma do quadro consolidado (item 'CORRETIVA'/'ENGENHARIA'
+  // dentro de cl, calculado em getClientes) — nunca recalcular separado, senao os dois lugares
+  // do dashboard podem divergir quando um grupo independente (ZAMP/AG BRAD/BOT) tiver E/C.
+  const totC=(cl.find(c=>c.sigla==='CORRETIVA')||{fat:0}).fat;
+  const totE=(cl.find(c=>c.sigla==='ENGENHARIA')||{fat:0}).fat;
 
   const dz=dados['ZAMP']||{P:0,C:0,E:0};
   const zampFat=dz.P+dz.C;
