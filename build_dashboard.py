@@ -37,6 +37,8 @@ ALIAS = {
     "FUND BRADESCO": "FUND BRAD", "FUND. BRAD": "FUND BRAD",
     "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD",
     "BK": "ZAMP",
+    "LEROY": "LM",
+    "SMART FIT": "SMTF",
 }
 
 # SIGLA -> {nome, obj_key (chave em OBJ_CLIENTE, ou None se sem meta), grupo, icon, cor, bg}
@@ -48,7 +50,7 @@ SIGLA_MAP = {
     'FUND BRAD': {'nome': 'Bradesco Fundação', 'obj_key': 'BRADESCO FUNDAÇÃO', 'grupo': 'normal', 'icon': 'BF', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'IN HAUS': {'nome': 'Bradesco In Haus', 'obj_key': 'BRADESCO IN HAUS', 'grupo': 'normal', 'icon': 'BI', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'BRAD': {'nome': 'Bradesco Eng.', 'obj_key': None, 'grupo': 'normal', 'icon': 'BE', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
-    'LM': {'nome': 'Leroy Merlin', 'obj_key': 'LEROY MERLIN', 'grupo': 'normal', 'icon': 'L', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
+    'LM': {'nome': 'Leroy Merlin', 'obj_key': 'LEROY', 'grupo': 'normal', 'icon': 'L', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'LM_RESIDENTES': {'nome': 'Leroy Merlin (Residentes)', 'obj_key': 'LEROY MERLIN RESIDENTES', 'grupo': 'normal', 'icon': 'LR', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'SMTF': {'nome': 'Smart Fit', 'obj_key': 'SMART FIT', 'grupo': 'normal', 'icon': 'SF', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
     'GBARBOSA': {'nome': 'GBarbosa', 'obj_key': 'GBARBOSA', 'grupo': 'normal', 'icon': 'G', 'cor': '#B07000', 'bg': '#FFF8E6'},
@@ -264,6 +266,12 @@ def build():
     warnings = []
     siglas_nao_mapeadas = set()
 
+    # le a Planilha de OSP primeiro: usamos o cadastro de unidades (fonte confiavel) pra
+    # separar Leroy Merlin normal de Residentes, em vez de depender do texto de OBSERVACAO
+    # (que nem sempre vem preenchido do jeito esperado).
+    registro_osp = parse_osp_registry(warnings)
+    lm_residente_codes = {osp for osp, _nome in registro_osp.get('LM_RESIDENTES', [])}
+
     for mes in meses_disponiveis:
         ws = wb[mes]
         agregado[mes] = {}
@@ -280,7 +288,7 @@ def build():
                 continue
             sigla = str(sigla).strip()
             sigla = ALIAS.get(sigla, sigla)
-            if sigla == 'LM' and obs is not None and 'RESIDENTE' in str(obs).upper():
+            if sigla == 'LM' and normalize_osp(os_maneng) in lm_residente_codes:
                 sigla = 'LM_RESIDENTES'
             cat = 'E' if serv == 'P-ENG' else serv
             val = parse_valor(valor)
@@ -360,8 +368,7 @@ def build():
         if total_mes > 0:
             mes_atual = m
 
-    # Planilha de OSP: registro de unidades por cliente, para achar pendencias de faturamento
-    registro_osp = parse_osp_registry(warnings)
+    # (registro_osp ja foi lido no inicio da funcao, usado tambem para achar pendencias de faturamento)
     siglas_osp_nao_mapeadas = sorted(set(registro_osp.keys()) - set(SIGLA_MAP.keys()))
     if siglas_osp_nao_mapeadas:
         warnings.append(f"OSP: SIGLAs com unidades cadastradas mas SEM entrada em SIGLA_MAP: {siglas_osp_nao_mapeadas}")
