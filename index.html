@@ -146,6 +146,9 @@ tbody tr:hover td{background:#F8F9FC}
 .eng-item{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);border-radius:8px;padding:7px 10px;font-size:11.5px}
 .eng-item .nome{color:var(--text)}
 .eng-item .valor{font-family:'Courier New',monospace;font-weight:700;color:var(--zero);flex-shrink:0}
+.prev-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border-radius:8px;padding:9px 10px;font-size:11.5px;cursor:pointer;transition:background .1s}
+.prev-item:hover{background:var(--border)}
+.prev-item .valor{font-family:'Courier New',monospace;font-weight:700;flex-shrink:0;min-width:78px;text-align:right}
 
 /* CLIENTE VIEW */
 .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
@@ -257,7 +260,7 @@ tbody tr:hover td{background:#F8F9FC}
 // ============================================================
 // DADOS — gerados automaticamente a partir da planilha oficial
 // Fonte: CONTROLE DE FATURAMENTO UNIFICADO 2026.xlsx (Google Drive)
-// gerado em 28/08/2026 08:18 (America/Sao_Paulo)
+// gerado em 28/08/2026 08:30 (America/Sao_Paulo)
 // ============================================================
 const ALIAS = {"SAM'S": "SAMS", "GBRABOSA": "GBARBOSA", "BM": "BANCO MERCANTIL", "BCO MERC": "BANCO MERCANTIL", "BCO MERCANTIL": "BANCO MERCANTIL", "CARREFOUR": "CRF", "BOTICARIO": "BOT", "BRADESCO": "BRAD", "NUC BRAD": "IN HAUS", "BRADESCO IN HAUS": "IN HAUS", "SHOPPING PAMPLONA": "CRF", "SHOP PAMPLONA": "CRF", "MERCANTIL MERCADO": "MERCANTIL", "ATAKARE": "ATAKAREJO", "BAUDUCCO2": "BAUDUCCO", "BRAD AG": "AG BRAD", "BRADESCO AGENCIAS": "AG BRAD", "FUND BRADESCO": "FUND BRAD", "FUND. BRAD": "FUND BRAD", "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD", "BK": "ZAMP", "LEROY": "LM", "LEROY MERLIN RESIDENTE": "LM_RESIDENTES", "SMART FIT": "SMTF", "BRADESCO - CACOAL": "BRAD", "BRADESCO - PRÉDIO PRATA": "BRAD", "BRADESCO - PRÉDIO PRATA SALA LAN": "BRAD", "BRADESCO RESERVA TÉCNICA": "BRAD", "BRADESCO RESERVA TÉCNICA - PREVENTIVA": "BRAD", "BRADESCO FUNDAÇÃO - PROPRIÁ": "FUND BRAD"};
 function normSigla(s){ return ALIAS[s] || s; }
@@ -412,7 +415,8 @@ function renderGrupos(){
     const diff=g.fat-g.obj;
     const sel=FILTRO===g.key?' selected':'';
     const pW=Math.min(pct*100,100);
-    return `<div class="gcard anim${sel}" style="border-top:3px solid ${g.cor}" onclick="filtrarGrupo('${g.key.replace(/'/g,"\\'")}',this)">
+    const acao=g.key==='P'?'abrirPreventivaPendentes()':`filtrarGrupo('${g.key.replace(/'/g,"\\'")}',this)`;
+    return `<div class="gcard anim${sel}" style="border-top:3px solid ${g.cor}" onclick="${acao}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
         <div class="gcard-icon" style="background:${g.cor}">${g.icon}</div>
         <span class="gcard-pct" style="background:${bgPct(pct)};color:${cor}">${g.obj>0?fmtPct(pct):'—'}</span>
@@ -555,6 +559,34 @@ function openModal(sigla){
 }
 function closeModal(){document.getElementById('modal').style.display='none';}
 
+function abrirPreventivaPendentes(){
+  const cl=getClientes(MES);
+  const pendentes=cl.filter(c=>c.grupo==='normal'&&c.obj>0&&c.s&&c.s.p<1)
+    .sort((a,b)=>a.s.p-b.s.p);
+  const mesLabel=MES.replace('-26','/2026');
+  document.getElementById('m-icon').textContent='P';
+  document.getElementById('m-icon').style.background='#1B3A6B';
+  document.getElementById('m-title').textContent='Preventiva — clientes atrasados';
+  document.getElementById('m-sub').textContent=`${mesLabel} · ${pendentes.length} cliente${pendentes.length!==1?'s':''} abaixo da meta`;
+  document.getElementById('m-body').innerHTML=pendentes.length?`
+    <div class="osp-list" style="max-height:420px">
+      ${pendentes.map(c=>{
+        const diff=c.fat-c.obj;
+        return `<div class="prev-item" onclick="closeModal();openModal('${c.sigla}')">
+          <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">
+            <div style="width:26px;height:26px;border-radius:7px;background:${c.bg};color:${c.cor};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0">${c.icon}</div>
+            <span style="font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.nome}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <span class="chip ${c.s.c}">${c.s.l}</span>
+            <span class="valor" style="color:var(--red)">${fmt(Math.abs(diff))}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`:`<div class="osp-ok">✓ todos os clientes de Preventiva atingiram a meta em ${mesLabel}</div>`;
+  document.getElementById('modal').style.display='flex';
+}
+
 function filtrar(g,btn){
   FILTRO=g;
   document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
@@ -617,7 +649,7 @@ function renderAll(){
 const selEl=document.getElementById('mes-sel');
 const NOME_MES={'JAN-26':'Janeiro 2026','FEV-26':'Fevereiro 2026','MAR-26':'Março 2026','ABR-26':'Abril 2026','MAI-26':'Maio 2026','JUN-26':'Junho 2026','JUL-26':'Julho 2026','AGO-26':'Agosto 2026','SET-26':'Setembro 2026','OUT-26':'Outubro 2026','NOV-26':'Novembro 2026','DEZ-26':'Dezembro 2026'};
 selEl.innerHTML=MESES_DISPONIVEIS.map(m=>`<option value="${m}"${m===MES_ATUAL?' selected':''}>${NOME_MES[m]||m}</option>`).join('');
-document.getElementById('upd-sub').textContent='atualizado: 28/08/2026 08:18';
+document.getElementById('upd-sub').textContent='atualizado: 28/08/2026 08:30';
 renderAll();
 </script>
 </body>
