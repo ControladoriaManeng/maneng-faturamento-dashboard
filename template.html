@@ -568,7 +568,12 @@ function abrirPreventivaPendentes(){
   document.getElementById('m-icon').style.background='#1B3A6B';
   document.getElementById('m-title').textContent='Preventiva — clientes atrasados';
   document.getElementById('m-sub').textContent=`${mesLabel} · ${pendentes.length} cliente${pendentes.length!==1?'s':''} abaixo da meta`;
+  const totalFalta=pendentes.reduce((a,c)=>a+(c.obj-c.fat),0);
   document.getElementById('m-body').innerHTML=pendentes.length?`
+    <div class="modal-result" style="background:var(--red-bg);margin:0 0 14px">
+      <div class="modal-result-lbl">Total que falta para bater a meta</div>
+      <div class="modal-result-val" style="color:var(--red)">${fmtFull(totalFalta)}</div>
+    </div>
     <div class="osp-list" style="max-height:420px">
       ${pendentes.map(c=>{
         const diff=c.fat-c.obj;
