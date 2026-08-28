@@ -320,7 +320,7 @@ const stOf=(fat,obj)=>{
   if(fat===0)return{l:'⚠ SEM FAT.',c:'c-zero',cor:'var(--zero)',p:0};
   const p=fat/obj;
   if(p>=1)return{l:'✓ ATINGIDO',c:'c-ok',cor:'var(--green)',p};
-  if(p>=0.75)return{l:'● EM RISCO',c:'c-warn',cor:'var(--yellow)',p};
+  if(p>=0.75)return{l:'● PENDENTE',c:'c-warn',cor:'var(--yellow)',p};
   return{l:'✕ ATRASADO',c:'c-bad',cor:'var(--red)',p};
 };
 
