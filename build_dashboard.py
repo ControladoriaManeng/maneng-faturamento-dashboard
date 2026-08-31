@@ -283,10 +283,17 @@ def build():
     registro_osp = parse_osp_registry(warnings)
     lm_residente_codes = {osp for osp, _nome in registro_osp.get('LM_RESIDENTES', [])}
 
+    # detalhe_bruto: mes -> categoria (E/C) -> sigla ORIGINAL da nota (antes do alias) -> valor.
+    # Usado no detalhamento de Engenharia/Corretiva pra mostrar a sigla exata de cada nota,
+    # mesmo quando varios projetos avulsos (ex.: "BRADESCO - CACOAL", "BRADESCO - PREDIO
+    # PRATA SALA LAN") sao consolidados no mesmo cliente (BRAD) para fins de totalizacao.
+    detalhe_bruto = {}
+
     for mes in meses_disponiveis:
         ws = wb[mes]
         agregado[mes] = {}
         faturado_osp[mes] = {}
+        detalhe_bruto[mes] = {'E': {}, 'C': {}}
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row is None or len(row) < 9:
                 continue
@@ -297,8 +304,8 @@ def build():
             serv = str(serv).strip().upper()
             if serv not in ('P', 'C', 'E', 'P-ENG'):
                 continue
-            sigla = str(sigla).strip()
-            sigla = ALIAS.get(sigla, sigla)
+            sigla_bruta = str(sigla).strip()
+            sigla = ALIAS.get(sigla_bruta, sigla_bruta)
             if sigla in SIGLAS_IGNORADAS:
                 continue
             if sigla == 'LM' and normalize_osp(os_maneng) in lm_residente_codes:
@@ -316,6 +323,9 @@ def build():
                 osp_norm = normalize_osp(os_maneng)
                 if osp_norm:
                     faturado_osp[mes].setdefault(sigla, set()).add(osp_norm)
+            if cat in ('E', 'C'):
+                bucket = detalhe_bruto[mes][cat]
+                bucket[sigla_bruta] = round(bucket.get(sigla_bruta, 0.0) + val, 2)
 
     # aba Objetivo: metas por cliente + metas por grupo
     ws = wb['Objetivo']
@@ -409,6 +419,7 @@ def build():
     inject('/*SIGLA_MAP_JSON*/', json.dumps(SIGLA_MAP, ensure_ascii=False))
     inject('/*REGISTRO_OSP_JSON*/', json.dumps(registro_osp, ensure_ascii=False))
     inject('/*FATURADO_OSP_JSON*/', json.dumps(faturado_osp_json, ensure_ascii=False))
+    inject('/*DETALHE_BRUTO_JSON*/', json.dumps(detalhe_bruto, ensure_ascii=False))
     html = html.replace('/*GENERATED_AT*/', f'gerado em {agora} (America/Sao_Paulo)')
     html = html.replace('/*ATUALIZADO_EM*/', agora)
 

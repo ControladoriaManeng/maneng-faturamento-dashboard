@@ -292,6 +292,9 @@ const SIGLA_MAP = /*SIGLA_MAP_JSON*/;
 const REGISTRO_OSP = /*REGISTRO_OSP_JSON*/;
 // FATURADO_OSP: mes -> sigla -> [osp, ...] — unidades com preventiva faturada naquele mes
 const FATURADO_OSP = /*FATURADO_OSP_JSON*/;
+// DETALHE_BRUTO: mes -> {E:{sigla_original_da_nota:valor}, C:{...}} — sigla exata de cada nota,
+// antes de consolidar clientes/projetos avulsos num so card (ex.: BRAD junta varios projetos).
+const DETALHE_BRUTO = /*DETALHE_BRUTO_JSON*/;
 
 function unidadesPendentes(sigla, mes){
   const registro = REGISTRO_OSP[sigla];
@@ -332,19 +335,25 @@ function getClientes(mes){
   // independente de quem faturou — o detalhe de quais clientes contribuiram fica no modal
   // (breakdown). ZAMP/AG BRAD/BOT sao grupos independentes e mantem a propria Corretiva.
   let totE=0, totC=0;
-  const engBreakdown=[], corBreakdown=[];
   for(const sigla of siglas){
     const map=SIGLA_MAP[sigla];if(!map)continue;
     const d=dados[sigla]||{P:0,C:0,E:0};
     const obj=map.obj_key?(OBJ_CLIENTE[map.obj_key]||0):0;
     const especial=map.grupo!=='normal';
     const fat=especial?d.P+d.C:d.P;
-    if(d.E>0){ totE+=d.E; engBreakdown.push({nome:map.nome,valor:d.E}); }
-    if(!especial&&d.C>0){ totC+=d.C; corBreakdown.push({nome:map.nome,valor:d.C}); }
+    if(d.E>0) totE+=d.E;
+    if(!especial&&d.C>0) totC+=d.C;
     lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:stOf(fat,obj)});
   }
-  engBreakdown.sort((a,b)=>b.valor-a.valor);
-  corBreakdown.sort((a,b)=>b.valor-a.valor);
+  // detalhamento mostra a sigla EXATA de cada nota (antes de consolidar projetos avulsos no
+  // mesmo cliente, ex.: "BRAD"), pra dar pra identificar de qual unidade/projeto veio o valor.
+  const detE=(DETALHE_BRUTO[mes]||{}).E||{};
+  const detC=(DETALHE_BRUTO[mes]||{}).C||{};
+  const engBreakdown=Object.entries(detE).map(([sig,valor])=>({nome:sig,valor})).sort((a,b)=>b.valor-a.valor);
+  const corBreakdown=Object.entries(detC).filter(([sig])=>{
+    const m=SIGLA_MAP[normSigla(sig)];
+    return !m||m.grupo==='normal';
+  }).map(([sig,valor])=>({nome:sig,valor})).sort((a,b)=>b.valor-a.valor);
   const engObj=OBJ_GRUPO['ENGENHARIA']||0;
   const corObj=OBJ_GRUPO['CORRETIVA']||0;
   lista.push({sigla:'ENGENHARIA',nome:'Engenharia',grupo:'ENGENHARIA',icon:'E',cor:'#7B2700',bg:'#FEF8F5',
