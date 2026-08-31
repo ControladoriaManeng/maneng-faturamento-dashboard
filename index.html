@@ -260,7 +260,7 @@ tbody tr:hover td{background:#F8F9FC}
 // ============================================================
 // DADOS — gerados automaticamente a partir da planilha oficial
 // Fonte: CONTROLE DE FATURAMENTO UNIFICADO 2026.xlsx (Google Drive)
-// gerado em 31/08/2026 16:01 (America/Sao_Paulo)
+// gerado em 31/08/2026 17:01 (America/Sao_Paulo)
 // ============================================================
 const ALIAS = {"SAM'S": "SAMS", "GBRABOSA": "GBARBOSA", "BM": "BANCO MERCANTIL", "BCO MERC": "BANCO MERCANTIL", "BCO MERCANTIL": "BANCO MERCANTIL", "CARREFOUR": "CRF", "BOTICARIO": "BOT", "O BOTICARIO": "BOT", "BRADESCO": "BRAD", "NUC BRAD": "IN HAUS", "BRADESCO IN HAUS": "IN HAUS", "SHOPPING PAMPLONA": "CRF", "SHOP PAMPLONA": "CRF", "MERCANTIL MERCADO": "MERCANTIL", "ATAKARE": "ATAKAREJO", "BAUDUCCO2": "BAUDUCCO", "BRAD AG": "AG BRAD", "BRADESCO AGENCIAS": "AG BRAD", "FUND BRADESCO": "FUND BRAD", "FUND. BRAD": "FUND BRAD", "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD", "BK": "ZAMP", "LEROY": "LM", "LEROY MERLIN RESIDENTE": "LM_RESIDENTES", "SMART FIT": "SMTF", "BRADESCO - CACOAL": "BRAD", "BRADESCO - PRÉDIO PRATA": "BRAD", "BRADESCO - PRÉDIO PRATA SALA LAN": "BRAD", "BRADESCO RESERVA TÉCNICA": "BRAD", "BRADESCO RESERVA TÉCNICA - PREVENTIVA": "BRAD", "BRADESCO FUNDAÇÃO - PROPRIÁ": "FUND BRAD"};
 function normSigla(s){ return ALIAS[s] || s; }
@@ -663,7 +663,7 @@ function renderAll(){
 const selEl=document.getElementById('mes-sel');
 const NOME_MES={'JAN-26':'Janeiro 2026','FEV-26':'Fevereiro 2026','MAR-26':'Março 2026','ABR-26':'Abril 2026','MAI-26':'Maio 2026','JUN-26':'Junho 2026','JUL-26':'Julho 2026','AGO-26':'Agosto 2026','SET-26':'Setembro 2026','OUT-26':'Outubro 2026','NOV-26':'Novembro 2026','DEZ-26':'Dezembro 2026'};
 selEl.innerHTML=MESES_DISPONIVEIS.map(m=>`<option value="${m}"${m===MES_ATUAL?' selected':''}>${NOME_MES[m]||m}</option>`).join('');
-document.getElementById('upd-sub').textContent='atualizado: 31/08/2026 16:01';
+document.getElementById('upd-sub').textContent='atualizado: 31/08/2026 17:01';
 renderAll();
 </script>
 </body>
