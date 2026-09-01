@@ -152,6 +152,44 @@ DIVERSOS_OSP_TO_SIGLA = {
     '1842': 'COGNA',
 }
 
+# Quando uma nota e cancelada, a coluna SIGLA da planilha vira o texto "CANCELADA" (perde o
+# cliente original) mas a coluna CLIENTE costuma manter o nome da unidade. Usamos essas palavras-
+# chave pra recuperar de qual cliente era a nota cancelada. Ordem nao importa: sempre testamos a
+# chave mais longa primeiro (mais especifica), entao "BRADESCO FUND" ganha de "BRADESCO" sozinho.
+CANCEL_KEYWORDS = {
+    'BRADESCO FUND': 'FUND BRAD', 'FUNDACAO BRADESCO': 'FUND BRAD', 'FUNDAÇÃO BRADESCO': 'FUND BRAD',
+    'BRADESCO AGENCIA': 'AG BRAD', 'BRADESCO IN HAUS': 'IN HAUS', 'BRADESCO NUCLEO': 'IN HAUS',
+    'BRADESCO RESERVA': 'BRAD', 'BRADESCO': 'BRAD',
+    'LEROY MERLIN RESIDENTE': 'LM_RESIDENTES', 'LEROY MERLIN': 'LM', 'LEROY': 'LM',
+    'CARREFOUR': 'CRF', 'ASSAI': 'ASSAI', 'ASSAÍ': 'ASSAI',
+    'ATAKAREJO': 'ATAKAREJO', 'GBARBOSA': 'GBARBOSA', 'G BARBOSA': 'GBARBOSA',
+    "SAM'S": 'SAMS', 'SAMS': 'SAMS', 'AUTOZONE': 'AUTOZONE',
+    'BANCO MERCANTIL': 'BANCO MERCANTIL', 'MERCANTIL': 'MERCANTIL',
+    'BURGER KING': 'ZAMP', 'POPEYES': 'ZAMP',
+    'BOTICARIO': 'BOT', 'BOTICÁRIO': 'BOT',
+    'SMART FIT': 'SMTF', 'OBRAMAX': 'OBRAMAX', 'TENDA': 'TENDA',
+    'GIGA': 'GIGA', 'GPA': 'GPA', 'JLL': 'JLL', 'TIM': 'TIM',
+    'DIA': 'DIA', 'BAUDUCCO': 'BAUDUCCO', 'COBASI': 'COBASI', 'BIG': 'BIG',
+    'SENAC': 'SENAC', 'HAPVIDA': 'HAPVIDA', 'ROVERI': 'ROVERI',
+    'SIEMENS': 'SIEMENS', 'SINDILOJAS': 'SINDILOJAS', 'SINDLOJAS': 'SINDILOJAS',
+    'SUMERBOL': 'SUMERBOL', 'SAPATARIA': 'SAPATARIA', 'PORTO SEGURO': 'PORTO',
+    'ACCENTURE': 'ACCENTURE', 'DROGASIL': 'RD', 'RD SAUDE': 'RD SAUDE',
+    'COGNA': 'COGNA', 'ENGEMON': 'ENGEMON', 'BRETAS': 'BRETAS',
+    'VIVARA': 'VIVARA', 'IMOPAR': 'IMOPAR', 'OUTLET': 'OUTLET', 'OKEAN': 'OKEAN',
+}
+CANCEL_KEYWORDS_ORDENADAS = sorted(CANCEL_KEYWORDS.items(), key=lambda kv: -len(kv[0]))
+
+
+def recuperar_cliente_cancelado(cliente_texto):
+    if not cliente_texto:
+        return None
+    texto = str(cliente_texto).strip().upper()
+    for chave, sigla in CANCEL_KEYWORDS_ORDENADAS:
+        if chave in texto:
+            return sigla
+    return None
+
+
 # tradução dos rótulos do bloco "Modelo / Metas Valores" da aba Objetivo -> chaves usadas no dashboard
 GRUPO_KEY_MAP = {
     'PREVENTIVA TOTAL': 'PREVENTIVA TOTAL',
@@ -288,20 +326,41 @@ def build():
     # mesmo quando varios projetos avulsos (ex.: "BRADESCO - CACOAL", "BRADESCO - PREDIO
     # PRATA SALA LAN") sao consolidados no mesmo cliente (BRAD) para fins de totalizacao.
     detalhe_bruto = {}
+    # cancelados: mes -> sigla do cliente -> quantidade de notas canceladas naquele mes.
+    # A planilha nao preserva o valor em R$ de notas canceladas (o campo VALOR vira o texto
+    # "CANCELADA"), entao so conseguimos contar quantas, nao quanto.
+    cancelados = {}
+    cancelamentos_sem_cliente = 0
 
     for mes in meses_disponiveis:
         ws = wb[mes]
         agregado[mes] = {}
         faturado_osp[mes] = {}
         detalhe_bruto[mes] = {'E': {}, 'C': {}}
+        cancelados[mes] = {}
+
+        def registrar_cancelamento(sigla_cliente):
+            if sigla_cliente and sigla_cliente.upper() not in ('CANCELADA', 'CANCELADO'):
+                cancelados[mes][sigla_cliente] = cancelados[mes].get(sigla_cliente, 0) + 1
+
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row is None or len(row) < 9:
                 continue
             valor, sigla, serv, os_maneng = row[2], row[6], row[7], row[8]
             obs = row[5] if len(row) > 5 else None
+            cliente_txt = row[3] if len(row) > 3 else None
             if serv is None or sigla is None:
                 continue
             serv = str(serv).strip().upper()
+            if serv in ('CANCELADA', 'CANCELADO'):
+                # linha inteira foi zerada (SIGLA tambem virou "CANCELADA") — so da pra
+                # recuperar o cliente pelo texto que sobrou na coluna CLIENTE.
+                sigla_recuperada = recuperar_cliente_cancelado(cliente_txt)
+                if sigla_recuperada:
+                    registrar_cancelamento(sigla_recuperada)
+                else:
+                    cancelamentos_sem_cliente += 1
+                continue
             if serv not in ('P', 'C', 'E', 'P-ENG'):
                 continue
             sigla_bruta = str(sigla).strip()
@@ -313,7 +372,10 @@ def build():
             cat = 'E' if serv == 'P-ENG' else serv
             val = parse_valor(valor)
             if val is None:
-                warnings.append(f"{mes}: VALOR não numérico em linha SIGLA={sigla} SERV={serv}: {valor!r}")
+                if 'CANCEL' in str(valor).upper():
+                    registrar_cancelamento(sigla)
+                else:
+                    warnings.append(f"{mes}: VALOR não numérico em linha SIGLA={sigla} SERV={serv}: {valor!r}")
                 continue
             d = agregado[mes].setdefault(sigla, {'P': 0.0, 'C': 0.0, 'E': 0.0})
             d[cat] = round(d[cat] + val, 2)
@@ -326,6 +388,9 @@ def build():
             if cat in ('E', 'C'):
                 bucket = detalhe_bruto[mes][cat]
                 bucket[sigla_bruta] = round(bucket.get(sigla_bruta, 0.0) + val, 2)
+
+    if cancelamentos_sem_cliente:
+        warnings.append(f"{cancelamentos_sem_cliente} nota(s) cancelada(s) sem cliente identificavel pelo texto (nao contam no status 'Cancelado' de ninguem)")
 
     # aba Objetivo: metas por cliente + metas por grupo
     ws = wb['Objetivo']
@@ -420,6 +485,7 @@ def build():
     inject('/*REGISTRO_OSP_JSON*/', json.dumps(registro_osp, ensure_ascii=False))
     inject('/*FATURADO_OSP_JSON*/', json.dumps(faturado_osp_json, ensure_ascii=False))
     inject('/*DETALHE_BRUTO_JSON*/', json.dumps(detalhe_bruto, ensure_ascii=False))
+    inject('/*CANCELADOS_JSON*/', json.dumps(cancelados, ensure_ascii=False))
     html = html.replace('/*GENERATED_AT*/', f'gerado em {agora} (America/Sao_Paulo)')
     html = html.replace('/*ATUALIZADO_EM*/', agora)
 

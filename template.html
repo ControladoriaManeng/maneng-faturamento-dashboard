@@ -97,6 +97,8 @@ tbody tr:hover td{background:#F8F9FC}
 .c-warn{background:var(--yellow-bg);color:var(--yellow)}
 .c-bad{background:var(--red-bg);color:var(--red)}
 .c-zero{background:var(--zero-bg);color:var(--zero);border:1px solid rgba(123,39,0,.15)}
+.c-cancel{background:var(--purple-bg);color:var(--purple)}
+.c-pend-pedido{background:var(--teal-bg);color:var(--teal)}
 .prog{display:flex;align-items:center;gap:7px}
 .prog-track{flex:1;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
 .prog-fill{height:100%;border-radius:3px}
@@ -212,6 +214,7 @@ tbody tr:hover td{background:#F8F9FC}
           <button class="fb" onclick="filtrar('ZAMP',this)">ZAMP</button>
           <button class="fb" onclick="filtrar('AG BRAD',this)">Ag. Bradesco</button>
           <button class="fb" onclick="filtrar('BOT',this)">O Boticário</button>
+          <button class="fb" onclick="filtrar('SEM_FAT',this)">Sem Faturamento</button>
         </div>
       </div>
       <div id="zbanner-area"></div>
@@ -295,6 +298,9 @@ const FATURADO_OSP = /*FATURADO_OSP_JSON*/;
 // DETALHE_BRUTO: mes -> {E:{sigla_original_da_nota:valor}, C:{...}} — sigla exata de cada nota,
 // antes de consolidar clientes/projetos avulsos num so card (ex.: BRAD junta varios projetos).
 const DETALHE_BRUTO = /*DETALHE_BRUTO_JSON*/;
+// CANCELADOS: mes -> sigla -> quantidade de notas canceladas naquele mes (sem valor em R$,
+// a planilha nao preserva esse numero quando marca uma nota como cancelada).
+const CANCELADOS = /*CANCELADOS_JSON*/;
 
 function unidadesPendentes(sigla, mes){
   const registro = REGISTRO_OSP[sigla];
@@ -302,6 +308,18 @@ function unidadesPendentes(sigla, mes){
   const faturadas = new Set((FATURADO_OSP[mes]||{})[sigla]||[]);
   const pendentes = registro.filter(([osp])=>!faturadas.has(osp));
   return {total: registro.length, faturadas: registro.length-pendentes.length, pendentes};
+}
+
+// Camada extra sobre stOf(): quando o cliente esta abaixo da meta, tenta explicar o motivo
+// (cancelamento conhecido ou pedido/unidade ainda nao faturado) antes de cair em "Atrasado".
+function statusComMotivo(sigla, mes, fat, obj){
+  const base=stOf(fat,obj);
+  if(!base||base.p>=1) return base;
+  const nCancel=(CANCELADOS[mes]||{})[sigla]||0;
+  if(nCancel>0) return {l:`✕ CANCELADO (${nCancel})`, c:'c-cancel', cor:'var(--purple)', p:base.p};
+  const pend=unidadesPendentes(sigla,mes);
+  if(pend&&pend.pendentes.length>0) return {l:'⏳ PEDIDO PENDENTE', c:'c-pend-pedido', cor:'var(--teal)', p:base.p};
+  return base;
 }
 
 // ── Estado ──
@@ -343,7 +361,7 @@ function getClientes(mes){
     const fat=especial?d.P+d.C:d.P;
     if(d.E>0) totE+=d.E;
     if(!especial&&d.C>0) totC+=d.C;
-    lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:stOf(fat,obj)});
+    lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:statusComMotivo(sigla,mes,fat,obj)});
   }
   // detalhamento mostra a sigla EXATA de cada nota (antes de consolidar projetos avulsos no
   // mesmo cliente, ex.: "BRAD"), pra dar pra identificar de qual unidade/projeto veio o valor.
@@ -477,7 +495,9 @@ function renderResumo(cl){
 function renderTabela(cl){
   let lista=[...cl];
   if(FILTRO!=='TODOS'){
-    if(['ZAMP','AG BRAD','BOT','ENGENHARIA','CORRETIVA'].includes(FILTRO)){
+    if(FILTRO==='SEM_FAT'){
+      lista=lista.filter(c=>c.obj>0&&c.fat===0);
+    } else if(['ZAMP','AG BRAD','BOT','ENGENHARIA','CORRETIVA'].includes(FILTRO)){
       lista=lista.filter(c=>c.sigla===FILTRO);
     } else {
       lista=lista.filter(c=>c[FILTRO]>0 && !['ZAMP','AG BRAD','BOT','ENGENHARIA','CORRETIVA'].includes(c.sigla));
