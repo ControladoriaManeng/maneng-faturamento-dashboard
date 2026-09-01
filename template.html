@@ -351,6 +351,13 @@ const fmt=v=>{
   return(v<0?'- ':'')+'R$ '+s;
 };
 const fmtFull=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+// usado so no card "Total Faturado": mostra 3 casas decimais no milhao (ex.: R$ 4,097 M)
+const fmt3=v=>{
+  if(!v&&v!==0)return'—';
+  const a=Math.abs(v);
+  const s=a>=1e6?(a/1e6).toFixed(3).replace('.',',')+' M':a>=1000?(a/1000).toFixed(3).replace('.',',')+' K':a.toLocaleString('pt-BR',{minimumFractionDigits:0});
+  return(v<0?'- ':'')+'R$ '+s;
+};
 const fmtPct=v=>(v*100).toFixed(1).replace('.',',')+' %';
 const corPct=p=>p>=1?'var(--green)':p>=0.75?'var(--yellow)':p>0?'var(--red)':'var(--muted)';
 const bgPct=p=>p>=1?'var(--green-bg)':p>=0.75?'var(--yellow-bg)':p>0?'var(--red-bg)':'var(--bg)';
@@ -491,7 +498,7 @@ function renderResumo(cl){
   document.getElementById('resumo-row').innerHTML=`
     <div class="rcard anim" style="animation-delay:.05s">
       <div class="rcard-label">Total Faturado</div>
-      <div class="rcard-value" style="color:var(--navy)">${fmt(fat)}</div>
+      <div class="rcard-value" style="color:var(--navy)">${fmt3(fat)}</div>
       <div class="rcard-sub">${cl.filter(c=>c.fat>0).length} clientes com faturamento</div>
     </div>
     <div class="rcard anim" style="animation-delay:.09s">
