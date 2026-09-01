@@ -99,6 +99,7 @@ tbody tr:hover td{background:#F8F9FC}
 .c-zero{background:var(--zero-bg);color:var(--zero);border:1px solid rgba(123,39,0,.15)}
 .c-cancel{background:var(--purple-bg);color:var(--purple)}
 .c-pend-pedido{background:var(--teal-bg);color:var(--teal)}
+.c-nao-exec{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
 .prog{display:flex;align-items:center;gap:7px}
 .prog-track{flex:1;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
 .prog-fill{height:100%;border-radius:3px}
@@ -301,6 +302,20 @@ const DETALHE_BRUTO = /*DETALHE_BRUTO_JSON*/;
 // CANCELADOS: mes -> sigla -> quantidade de notas canceladas naquele mes (sem valor em R$,
 // a planilha nao preserva esse numero quando marca uma nota como cancelada).
 const CANCELADOS = /*CANCELADOS_JSON*/;
+// AJUSTES_STATUS/AJUSTES_META_FAT: fechamento manual da controladoria por (mes, sigla) —
+// nao vem da planilha nem da logica automatica, e' decisao humana registrada aqui.
+const AJUSTES_STATUS = /*AJUSTES_STATUS_JSON*/;
+const AJUSTES_META_FAT = /*AJUSTES_META_FAT_JSON*/;
+const STATUS_MANUAL = {
+  CANCELADO: {l:'✕ CANCELADO', c:'c-cancel', cor:'var(--purple)'},
+  PEDIDO_PENDENTE: {l:'⏳ PEDIDO PENDENTE', c:'c-pend-pedido', cor:'var(--teal)'},
+  SEM_FAT: {l:'⚠ SEM FAT.', c:'c-zero', cor:'var(--zero)'},
+  NAO_EXECUTADO: {l:'⊘ NÃO EXECUTADO', c:'c-nao-exec', cor:'var(--muted)'},
+};
+
+function metaAjustada(sigla, mes, fat, objOriginal){
+  return (objOriginal>0&&(AJUSTES_META_FAT[mes]||[]).includes(sigla)) ? fat : objOriginal;
+}
 
 function unidadesPendentes(sigla, mes){
   const registro = REGISTRO_OSP[sigla];
@@ -311,10 +326,13 @@ function unidadesPendentes(sigla, mes){
 }
 
 // Camada extra sobre stOf(): quando o cliente esta abaixo da meta, tenta explicar o motivo
-// (cancelamento conhecido ou pedido/unidade ainda nao faturado) antes de cair em "Atrasado".
+// (ajuste manual de fechamento, cancelamento conhecido, ou pedido/unidade ainda nao faturado)
+// antes de cair em "Atrasado".
 function statusComMotivo(sigla, mes, fat, obj){
   const base=stOf(fat,obj);
   if(!base||base.p>=1) return base;
+  const manual=(AJUSTES_STATUS[mes]||{})[sigla];
+  if(manual&&STATUS_MANUAL[manual]) return {...STATUS_MANUAL[manual], p:base.p};
   const nCancel=(CANCELADOS[mes]||{})[sigla]||0;
   if(nCancel>0) return {l:`✕ CANCELADO (${nCancel})`, c:'c-cancel', cor:'var(--purple)', p:base.p};
   const pend=unidadesPendentes(sigla,mes);
@@ -356,9 +374,10 @@ function getClientes(mes){
   for(const sigla of siglas){
     const map=SIGLA_MAP[sigla];if(!map)continue;
     const d=dados[sigla]||{P:0,C:0,E:0};
-    const obj=map.obj_key?(OBJ_CLIENTE[map.obj_key]||0):0;
     const especial=map.grupo!=='normal';
     const fat=especial?d.P+d.C:d.P;
+    const objOriginal=map.obj_key?(OBJ_CLIENTE[map.obj_key]||0):0;
+    const obj=metaAjustada(sigla,mes,fat,objOriginal);
     if(d.E>0) totE+=d.E;
     if(!especial&&d.C>0) totC+=d.C;
     lista.push({sigla,nome:map.nome,grupo:map.grupo,icon:map.icon,cor:map.cor,bg:map.bg,P:d.P,C:d.C,E:d.E,fat,obj,s:statusComMotivo(sigla,mes,fat,obj)});

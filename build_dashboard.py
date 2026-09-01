@@ -190,6 +190,21 @@ def recuperar_cliente_cancelado(cliente_texto):
     return None
 
 
+# Ajustes manuais de fechamento de mes: decisao humana (controladoria), nao vem da planilha
+# nem da logica automatica de cancelamento/pendencia. Chave = (mes, sigla).
+# status: 'CANCELADO' | 'PEDIDO_PENDENTE' | 'SEM_FAT' | 'NAO_EXECUTADO'
+AJUSTES_STATUS = {
+    ('AGO-26', 'SMTF'): 'NAO_EXECUTADO',
+    ('AGO-26', 'TENDA'): 'SEM_FAT',
+    ('AGO-26', 'SAMS'): 'PEDIDO_PENDENTE',
+}
+# clientes cuja meta do mes deve ser considerada igual ao que foi faturado (100% por definicao,
+# fechamento confirmou que nao ha diferenca real a perseguir).
+AJUSTES_META_IGUAL_FATURADO = {
+    ('AGO-26', 'GBARBOSA'),
+}
+
+
 # tradução dos rótulos do bloco "Modelo / Metas Valores" da aba Objetivo -> chaves usadas no dashboard
 GRUPO_KEY_MAP = {
     'PREVENTIVA TOTAL': 'PREVENTIVA TOTAL',
@@ -486,6 +501,14 @@ def build():
     inject('/*FATURADO_OSP_JSON*/', json.dumps(faturado_osp_json, ensure_ascii=False))
     inject('/*DETALHE_BRUTO_JSON*/', json.dumps(detalhe_bruto, ensure_ascii=False))
     inject('/*CANCELADOS_JSON*/', json.dumps(cancelados, ensure_ascii=False))
+    ajustes_status_json = {}
+    for (mes_aj, sigla_aj), status_aj in AJUSTES_STATUS.items():
+        ajustes_status_json.setdefault(mes_aj, {})[sigla_aj] = status_aj
+    ajustes_meta_fat_json = {}
+    for mes_aj, sigla_aj in AJUSTES_META_IGUAL_FATURADO:
+        ajustes_meta_fat_json.setdefault(mes_aj, []).append(sigla_aj)
+    inject('/*AJUSTES_STATUS_JSON*/', json.dumps(ajustes_status_json, ensure_ascii=False))
+    inject('/*AJUSTES_META_FAT_JSON*/', json.dumps(ajustes_meta_fat_json, ensure_ascii=False))
     html = html.replace('/*GENERATED_AT*/', f'gerado em {agora} (America/Sao_Paulo)')
     html = html.replace('/*ATUALIZADO_EM*/', agora)
 
