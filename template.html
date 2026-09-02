@@ -679,7 +679,12 @@ function go(v){
 function renderClienteView(){
   const cl=getClientes(MES);
   document.getElementById('client-sub').textContent=MES.replace('-26','/2026')+' · clique para ver o detalhe completo';
-  document.getElementById('client-grid').innerHTML=cl.filter(c=>c.fat>0||c.obj>0).map(c=>{
+  const listaOrdenada=cl.filter(c=>c.fat>0||c.obj>0).sort((a,b)=>{
+    const za=a.fat===0, zb=b.fat===0;
+    if(za!==zb) return za?-1:1;
+    return a.nome.localeCompare(b.nome,'pt-BR');
+  });
+  document.getElementById('client-grid').innerHTML=listaOrdenada.map(c=>{
     const z=c.fat===0&&c.obj>0;
     const pct=c.obj>0?c.fat/c.obj:0;
     return `<div class="cpill${z?' zp':''}" onclick="openModal('${c.sigla}')" style="border-top:3px solid ${c.cor}">
