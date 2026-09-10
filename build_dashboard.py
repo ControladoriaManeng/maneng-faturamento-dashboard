@@ -29,14 +29,15 @@ ALIAS = {
     "SAM'S": "SAMS", "GBRABOSA": "GBARBOSA", "BM": "BANCO MERCANTIL", "BCO MERC": "BANCO MERCANTIL",
     "BCO MERCANTIL": "BANCO MERCANTIL", "CARREFOUR": "CRF", "BOTICARIO": "BOT",
     "O BOTICARIO": "BOT",
-    "BRADESCO": "BRAD", "NUC BRAD": "IN HAUS",
+    "BRADESCO": "BRAD", "NUC BRAD": "IN HAUS", "NUCLEO BRADESCO": "IN HAUS",
     "BRADESCO IN HAUS": "IN HAUS",
     "SHOPPING PAMPLONA": "CRF", "SHOP PAMPLONA": "CRF", "MERCANTIL MERCADO": "MERCANTIL",
     "ATAKARE": "ATAKAREJO", "BAUDUCCO2": "BAUDUCCO",
     # descobertos lendo a planilha real em 2026-08-11:
-    "BRAD AG": "AG BRAD", "BRADESCO AGENCIAS": "AG BRAD",
+    "BRAD AG": "AG BRAD", "BRADESCO AGENCIAS": "AG BRAD", "AGÊNCIAS BRADESCO": "AG BRAD",
     "FUND BRADESCO": "FUND BRAD", "FUND. BRAD": "FUND BRAD",
     "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD",
+    "BRADESCO PREDIO VERMELHO": "BRAD",
     "BK": "ZAMP",
     "LEROY": "LM",
     "LEROY MERLIN RESIDENTE": "LM_RESIDENTES",
@@ -104,7 +105,7 @@ SIGLA_MAP = {
     'ENGEMON': {'nome': 'Engemon', 'obj_key': None, 'grupo': 'normal', 'icon': 'EG', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
     'RD': {'nome': 'RD (Raia/Drogasil)', 'obj_key': 'RD', 'grupo': 'normal', 'icon': 'RD', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
     'SENAC': {'nome': 'Senac', 'obj_key': 'SENAC', 'grupo': 'normal', 'icon': 'SC', 'cor': '#B07000', 'bg': '#FFF8E6'},
-    'HAPVIDA': {'nome': 'Hapvida', 'obj_key': None, 'grupo': 'normal', 'icon': 'HV', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
+    'HAPVIDA': {'nome': 'Hapvida', 'obj_key': 'HAPVIDA', 'grupo': 'normal', 'icon': 'HV', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
 }
 
 # Planilha de OSP: cada aba = 1 cliente, coluna "OSP" = codigo unico da unidade
