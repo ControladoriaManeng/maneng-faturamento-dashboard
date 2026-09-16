@@ -30,6 +30,7 @@ ALIAS = {
     "BCO MERCANTIL": "BANCO MERCANTIL", "CARREFOUR": "CRF", "BOTICARIO": "BOT",
     "O BOTICARIO": "BOT",
     "BRADESCO": "BRAD", "NUC BRAD": "IN HAUS", "NUCLEO BRADESCO": "IN HAUS",
+    "RD SAUDE": "RD",
     "BRADESCO IN HAUS": "IN HAUS",
     "SHOPPING PAMPLONA": "CRF", "SHOP PAMPLONA": "CRF", "MERCANTIL MERCADO": "MERCANTIL",
     "ATAKARE": "ATAKAREJO", "BAUDUCCO2": "BAUDUCCO",
@@ -39,9 +40,10 @@ ALIAS = {
     "BRADESCO FUNDAÇÃO": "FUND BRAD", "FUNDAÇÃO BRADESCO": "FUND BRAD",
     "BRADESCO PREDIO VERMELHO": "BRAD",
     "BK": "ZAMP",
-    "LEROY": "LM",
+    "LEROY": "LM", "LEROY MERLIN": "LM",
     "LEROY MERLIN RESIDENTE": "LM_RESIDENTES",
     "SMART FIT": "SMTF",
+    "RD (Raia/Drogasil)": "RD",
     # projetos avulsos de Engenharia Bradesco lançados com sigla descritiva em vez de código:
     "BRADESCO - CACOAL": "BRAD", "BRADESCO - PRÉDIO PRATA": "BRAD",
     "BRADESCO - PRÉDIO PRATA SALA LAN": "BRAD",
@@ -98,7 +100,6 @@ SIGLA_MAP = {
     'LG': {'nome': 'LG', 'obj_key': None, 'grupo': 'normal', 'icon': 'LG', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'GM': {'nome': 'GM', 'obj_key': None, 'grupo': 'normal', 'icon': 'GM', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'OKEAN': {'nome': 'Okean', 'obj_key': None, 'grupo': 'normal', 'icon': 'OK', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
-    'RD SAUDE': {'nome': 'RD Saúde', 'obj_key': None, 'grupo': 'normal', 'icon': 'RS', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     # clientes novos, encontrados na leitura da planilha real em 2026-08-11:
     'BRETAS': {'nome': 'Bretas', 'obj_key': None, 'grupo': 'normal', 'icon': 'BR', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'COGNA': {'nome': 'Cogna', 'obj_key': None, 'grupo': 'normal', 'icon': 'CG', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
@@ -174,7 +175,7 @@ CANCEL_KEYWORDS = {
     'SENAC': 'SENAC', 'HAPVIDA': 'HAPVIDA', 'ROVERI': 'ROVERI',
     'SIEMENS': 'SIEMENS', 'SINDILOJAS': 'SINDILOJAS', 'SINDLOJAS': 'SINDILOJAS',
     'SUMERBOL': 'SUMERBOL', 'SAPATARIA': 'SAPATARIA', 'PORTO SEGURO': 'PORTO',
-    'ACCENTURE': 'ACCENTURE', 'DROGASIL': 'RD', 'RD SAUDE': 'RD SAUDE',
+    'ACCENTURE': 'ACCENTURE', 'DROGASIL': 'RD', 'RD SAUDE': 'RD',
     'COGNA': 'COGNA', 'ENGEMON': 'ENGEMON', 'BRETAS': 'BRETAS',
     'VIVARA': 'VIVARA', 'IMOPAR': 'IMOPAR', 'OUTLET': 'OUTLET', 'OKEAN': 'OKEAN',
 }
