@@ -90,7 +90,7 @@ SIGLA_MAP = {
     'SAPATARIA': {'nome': 'Sapataria Nova', 'obj_key': 'SAPATARIA', 'grupo': 'normal', 'icon': 'SA', 'cor': '#B07000', 'bg': '#FFF8E6'},
     'PORTO': {'nome': 'Porto Seguro', 'obj_key': 'PORTO', 'grupo': 'normal', 'icon': 'PS', 'cor': '#C0200E', 'bg': '#FEF0EE'},
     'ROVERI': {'nome': 'Roveri', 'obj_key': 'ROVERI', 'grupo': 'normal', 'icon': 'RO', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
-    'GIGA': {'nome': 'Cencosud Giga', 'obj_key': 'GIGA', 'grupo': 'normal', 'icon': 'GI', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
+    'GIGA': {'nome': 'Giga', 'obj_key': 'GIGA', 'grupo': 'normal', 'icon': 'GI', 'cor': '#E84B1A', 'bg': '#FEF3EE'},
     'COBASI': {'nome': 'Cobasi', 'obj_key': None, 'grupo': 'normal', 'icon': 'CO', 'cor': '#0E8A5A', 'bg': '#EAF7F1'},
     'BIG': {'nome': 'BIG', 'obj_key': None, 'grupo': 'normal', 'icon': 'BI', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
     'SMS': {'nome': 'SMS', 'obj_key': None, 'grupo': 'normal', 'icon': 'SM', 'cor': '#B07000', 'bg': '#FFF8E6'},
