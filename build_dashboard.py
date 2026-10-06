@@ -96,7 +96,7 @@ SIGLA_MAP = {
     'SMS': {'nome': 'SMS', 'obj_key': None, 'grupo': 'normal', 'icon': 'SM', 'cor': '#B07000', 'bg': '#FFF8E6'},
     'IMOPAR': {'nome': 'Imopar (Shopping Paseo)', 'obj_key': None, 'grupo': 'normal', 'icon': 'IM', 'cor': '#8A96B0', 'bg': '#F0F2F7'},
     'OUTLET': {'nome': 'Outlet Premium Itaquaquecetuba', 'obj_key': None, 'grupo': 'normal', 'icon': 'OU', 'cor': '#8A96B0', 'bg': '#F0F2F7'},
-    'VIVARA': {'nome': 'Vivara', 'obj_key': None, 'grupo': 'normal', 'icon': 'VI', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
+    'VIVARA': {'nome': 'Vivara', 'obj_key': 'VIVARA', 'grupo': 'normal', 'icon': 'VI', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
     'LG': {'nome': 'LG', 'obj_key': None, 'grupo': 'normal', 'icon': 'LG', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'GM': {'nome': 'GM', 'obj_key': None, 'grupo': 'normal', 'icon': 'GM', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
     'OKEAN': {'nome': 'Okean', 'obj_key': None, 'grupo': 'normal', 'icon': 'OK', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
