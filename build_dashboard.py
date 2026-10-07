@@ -60,7 +60,7 @@ SIGLAS_IGNORADAS = {
 
 # SIGLA -> {nome, obj_key (chave em OBJ_CLIENTE, ou None se sem meta), grupo, icon, cor, bg}
 SIGLA_MAP = {
-    'AG BRAD': {'nome': 'Agências Bradesco', 'obj_key': None, 'grupo': 'AG BRAD', 'icon': 'B', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
+    'AG BRAD': {'nome': 'Agências Bradesco', 'obj_key': 'BRADESCO AGÊNCIAS', 'grupo': 'AG BRAD', 'icon': 'B', 'cor': '#0A7B8A', 'bg': '#E6F6F8'},
     'BOT': {'nome': 'O Boticário', 'obj_key': 'O BOTICARIO', 'grupo': 'BOT', 'icon': 'O', 'cor': '#5B35B0', 'bg': '#F0ECFC'},
     'ZAMP': {'nome': 'ZAMP', 'obj_key': None, 'grupo': 'ZAMP', 'icon': 'Z', 'cor': '#C0200E', 'bg': '#FEF0EE'},
     'CRF': {'nome': 'Carrefour', 'obj_key': 'CARREFOUR', 'grupo': 'normal', 'icon': 'C', 'cor': '#1B3A6B', 'bg': '#EEF2FA'},
@@ -215,7 +215,7 @@ GRUPO_KEY_MAP = {
     'ENGENHARIA': 'ENGENHARIA',
     'ZAMP - PREVENTIVA': 'ZAMP_P',
     'ZAMP - CORRETIVA': 'ZAMP_C',
-    'BRADESCO AGENCIAS': 'BRADESCO AGENCIAS',
+    'BRADESCO AGENCIAS': 'BRADESCO AGENCIAS', 'BRADESCO AGÊNCIAS': 'BRADESCO AGENCIAS',
 }
 
 
@@ -442,6 +442,12 @@ def build():
                 chave = 'CARREFOUR'
                 valor += obj_cliente.get('CARREFOUR', 0.0)
             obj_cliente[chave] = valor
+
+    # Bradesco Agencias passou a ser lancado na secao Cliente (nao mais em Modelo/grupo);
+    # mantem OBJ_GRUPO['BRADESCO AGENCIAS'] alimentado a partir do valor de cliente, pois o
+    # template usa esse total nas somas de "visao geral" (objGlobal, agObj).
+    if 'BRADESCO AGENCIAS' not in obj_grupo and 'BRADESCO AGÊNCIAS' in obj_cliente:
+        obj_grupo['BRADESCO AGENCIAS'] = obj_cliente['BRADESCO AGÊNCIAS']
 
     for k in ('PREVENTIVA TOTAL', 'CORRETIVA', 'ENGENHARIA', 'ZAMP_P', 'ZAMP_C', 'BRADESCO AGENCIAS'):
         if k not in obj_grupo:
